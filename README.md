@@ -6,3 +6,4 @@ navigate to JScompiler and run index.js in node
 1. gnu gas
 2. xorriso
 3. qemu
+4. grub cli tools
