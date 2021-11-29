@@ -25,20 +25,38 @@ _vga_entry:
 .endm
 
 .macro inc_var addr
-    push %eax
+    push %ebx
     mov %ebx, [\addr]
     inc %ebx
     mov \addr, %ebx
-    pop %eax
+    pop %ebx
 .endm
 
-.macro put_char c, i = _positionOnLine # character, index
+.macro dec_var addr
+    push %ebx
+    mov %ebx, [\addr]
+    inc %ebx
+    mov \addr, %ebx
+    pop %edx
+.endm
+
+.macro add_var addr, value
+    push %ebx
+    mov %ebx, [\addr]
+    add %ebx, \value
+    mov \addr, %ebx
+    pop %ebx
+.endm
+
+.macro new_line
+    add_var _lineNumber, 80
+.endm
+
+.macro put_char c, i = _lineNumber # character, index
     pusha # save the values
     mov %cl, \c # prepare the character register
     mov %ebx, \i # prepare the index register
     call _vga_entry # call the display
-
-    inc_var _positionOnLine
     popa
 .endm
 
@@ -56,7 +74,7 @@ put_string_start:
     ret
     
 
-.macro put_string s, i = _positionOnLine # string pointer, index  
+.macro put_string s, i = _lineNumber # string pointer, index  
     push %edx
     push %esi
 
@@ -71,7 +89,7 @@ put_string_start:
     pop %edx
 .endm
 
-.macro put_int_single n, i = _positionOnLine # number, index
+.macro put_int_single n, i # number, index
     push %edx
     push %esi
     # mov %dh, [\n] # move the number to dh
@@ -109,7 +127,7 @@ put_int_loop_start:
     jne put_int_digit_print_start # if there are more digits jump back 
     ret # otherwise you finished!
 
-.macro put_int n, i # number, at index
+.macro put_int n, i = _lineNumber # number, at index
     # pusha
     mov %ebx, 10 # number to divide by
     mov %ecx, 0 # the length of the number
@@ -117,7 +135,6 @@ put_int_loop_start:
     mov %esi, \i # the index
     call put_int_loop_start # put each digit into the stack 
     # popa
-
 .endm
 
 

@@ -5,7 +5,7 @@ const {exec} = require("child_process");
 Note:
 the compiler treats spaces, commas, and parenthesis the same
 therefore 
-    printf(%i, *myNumber, 1) 
+    printf(%i, *myNumber, 1)
 is the same as
     printf %i *myNumber 1
 and is why
@@ -21,7 +21,8 @@ as
 
 var typedefs = {
     int: ".long",
-    string: ".asciz"
+    string: ".asciz",
+    char: ".short"
 }
 
 var compares = {
@@ -39,7 +40,6 @@ var outConts = {
 .org 0x100
 .global kernel_entry
 
-_positionOnLine: .long 0
 _lineNumber: .long 0
 `,
     middle:
@@ -97,15 +97,28 @@ function incPseudoLabel() {
 }
 
 var definedFuncs = {
-    printf: function (type,value,index) {
-        //type = String(type)
-        //value = String(value)
-        //index = Number(index)
-
+    printf: function (type,value) {
+        if(type == "s" || type == "%s") {
+            main_kernel_data.push(`put_string ${value}`)
+        } else if (type == "i" || type == "%i") {
+            main_kernel_data.push(`put_int ${value}`)
+        } else if (type == "c" || type == "%c") {
+            main_kernel_data.push(`put_char ${value}`)
+        } else {
+            console.error("Error: Unkown type", type)
+        }
+    },
+    printLine: function(type,value) {
+        this.printf(type,value)
+        main_kernel_data.push(`new_line`)
+    },
+    printAddr: function (type,value,index) {
         if(type == "s" || type == "%s") {
             main_kernel_data.push(`put_string ${value}, ${index}`)
         } else if (type == "i" || type == "%i") {
             main_kernel_data.push(`put_int ${value}, ${index}`)
+        } else if (type == "c" || type == "%c") {
+            main_kernel_data.push(`put_char ${value}, ${index}`)
         } else {
             console.error("Error: Unkown type", type)
         }
@@ -140,6 +153,11 @@ var definedFuncs = {
         main_kernel_data.push(
             `jmp ${destination}`
         )
+    },
+    newLine: function() {
+        main_kernel_data.push(
+            `new_line`
+        )
     }
 }
 
@@ -149,6 +167,9 @@ var definedSpecials = {
     },
     "++": function (rest) {
         main_kernel_data.push(`inc_var ${rest[0]}`)
+    },
+    "--": function (rest) {
+        main_kernel_data.push(`dec_var ${rest[0]}`)
     }
 }
 

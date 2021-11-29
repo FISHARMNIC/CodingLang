@@ -1,33 +1,21 @@
-/* 
-Note:
-the compiler treats spaces, commas, and parenthesis the same
-therefore 
-    printf(%i, *myNumber, 1) 
-is the same as
-    printf %i *myNumber 1
-and is why
-    if(1,==,1)
-works as
-    if(1 == 1)
-and so does
-    label(myLabel)
-as
-    label myLabel
-*/
 var run = require('./lib.js')
 
 var mycode = `
 type int myNumber = 0
 type string myString = "Hello_World"
+type char myChar = 'A'
 
 label loopStart
-    printf(%i, *myNumber, *myNumber)
+    printLine(%i, *myNumber)
     ++ myNumber
-    if(*myNumber != 10)
+    if (*myNumber != 10)
         jump(loopStart)
     endif
 
-printf(%s, *myString, 80)
+printLine(%s, *myString)
 
+printLine(%c, *myChar)
+++ myChar
+printLine(%c, *myChar)
 `
 run(mycode)
