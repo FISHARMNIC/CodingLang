@@ -14,3 +14,65 @@ PL0:                 counter
     jmp PL1          endif, increment counter
 PL1:                 endif: counter
     how are you?    continue normally
+
+
+***********************************
+print hi
+if (1 < 10)
+    print yes
+else
+    print no
+endif
+print bye
+
+---------
+print hi 
+cmp 1, 10
+jl PL0          if(1 < 10)
+jmp PL1         else
+PL0:            true
+    print yes
+    jmp PL2     <- created by the else statement
+PL1:            <- created by the else
+    print no
+    jmp PL2
+PL2:            <-created by the endif
+
+
+************************************************************
+print hi
+if (1 < 10 && 1 > 0)
+    print true
+endif
+print bye
+--------
+print hi
+cmp 1,10
+jl PL0 <- normal
+jmp PL1 <- normal
+PL0: <-normal
+    cmp 1,0 <-seconday compare
+    jg PL2 <- manual pointer increase
+    jmp PL1
+    PL2:
+        print true <- continue full exec
+Pl1: <- exit from the full thing
+print bye
+
+************************************************************
+print hi
+if (3 > 10 || 3 < 5)
+    print true
+endif
+print bye
+---------------
+print hi
+cmp 3, 10
+jg PL0
+cmp 3, 5
+jl PL0
+jmp PL1     <- false
+PL0:
+    print true
+PL1:
+    print bye

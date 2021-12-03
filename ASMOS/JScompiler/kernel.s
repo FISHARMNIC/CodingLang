@@ -4,29 +4,24 @@
 .global kernel_entry
 
 _lineNumber: .long 0
-myNumber: .long 0
-myString: .asciz "Hello_World"
-myChar: .short 'A'
+myNumber: .long 7
+correct: .asciz "correct"
+incorrect: .asciz "incorrect"
 .include "./data.s"
 
 .section .text
 kernel_entry:
-loopStart:
-put_int [myNumber]
-new_line
-inc_var myNumber
 cmpb [myNumber], 10
-jne FAKE0
-jmp FAKE1
-FAKE0:
-jmp loopStart
-jmp FAKE1
-FAKE1:
-put_string [myString]
+jg AUTO0
+cmpb [myNumber], 5
+jl AUTO0
+jmp AUTO1
+AUTO0:
+put_string [correct]
 new_line
-put_char [myChar]
+jmp AUTO3
+AUTO1:
+put_string [incorrect]
 new_line
-inc_var myChar
-put_char [myChar]
-new_line
+AUTO3:
    ret

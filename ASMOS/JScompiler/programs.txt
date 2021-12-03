@@ -1,0 +1,45 @@
+
+//----------- DEMO ----------
+type int myNumber = 0
+type string myString = "Hello_World"
+type char myChar = 'A'
+
+label loopStart
+    printLine(%i, *myNumber)
+    ++ myNumber
+    if (*myNumber != 10)
+        jump(loopStart)
+    endif
+
+printLine(%s, *myString)
+
+printLine(%c, *myChar)
+++ myChar
+printLine(%c, *myChar)
+//--------------------------
+
+//---------else--------
+type string correct = "less_than_ten"
+type string incorrect = "greater_than_ten"
+
+type int myNumber = 1
+printLine(%i, *myNumber)
+if (*myNumber <= 10)
+    printLine(%s, *correct)
+else
+    printLine(%s, *incorrect)
+endif
+//------------------
+
+//-------extended if--------
+type int myNumber = 7
+
+type string correct = "correct"
+type string incorrect = "incorrect"
+
+extif(*myNumber > 10 || *myNumber < 5)
+    printLine(%s, *correct)
+else
+    printLine(%s, *incorrect)
+endif
+//---------------

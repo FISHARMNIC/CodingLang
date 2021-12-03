@@ -1,21 +1,18 @@
 var run = require('./lib.js')
 
 var mycode = `
-type int myNumber = 0
-type string myString = "Hello_World"
-type char myChar = 'A'
+type int myNumber = 7
 
-label loopStart
-    printLine(%i, *myNumber)
-    ++ myNumber
-    if (*myNumber != 10)
-        jump(loopStart)
-    endif
+type string correct = "correct"
+type string incorrect = "incorrect"
 
-printLine(%s, *myString)
-
-printLine(%c, *myChar)
-++ myChar
-printLine(%c, *myChar)
+extif(*myNumber > 10 || *myNumber < 5)
+    printLine(%s, *correct)
+else
+    printLine(%s, *incorrect)
+endif
 `
 run(mycode)
+/*
+
+*/

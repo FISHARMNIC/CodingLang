@@ -1,5 +1,5 @@
 const fs = require('fs')
-const {exec} = require("child_process");
+const { exec } = require("child_process");
 
 /* 
 Note:
@@ -35,7 +35,7 @@ var compares = {
 }
 
 var outConts = {
-    header:`
+    header: `
 .intel_syntax
 .org 0x100
 .global kernel_entry
@@ -77,8 +77,7 @@ if (as --32 kernel.s -o compiled/kernel.o) ; then
         grub-mkrescue -o compiled/MyOS.iso isodir
 
         #run the qemu
-        wsl -t
-        qemu-system-x86_64.exe -cdrom compiled/MyOS.iso
+        qemu-system-x86_64 -cdrom compiled/MyOS.iso
     fi
 fi
 `
@@ -86,10 +85,12 @@ fi
 var pseudolbl = 0
 
 function pseudoLabel(next) {
-    if(next == "next"){
-        return `FAKE${pseudolbl + 1}`
+    if (next == "next") {
+        return `AUTO${pseudolbl + 1}`
+    } else if (next == "secnext") {
+        return `AUTO${pseudolbl + 2}`
     }
-    return `FAKE${pseudolbl}`
+    return `AUTO${pseudolbl}`
 }
 
 function incPseudoLabel() {
@@ -97,8 +98,8 @@ function incPseudoLabel() {
 }
 
 var definedFuncs = {
-    printf: function (type,value) {
-        if(type == "s" || type == "%s") {
+    printf: function (type, value) {
+        if (type == "s" || type == "%s") {
             main_kernel_data.push(`put_string ${value}`)
         } else if (type == "i" || type == "%i") {
             main_kernel_data.push(`put_int ${value}`)
@@ -108,12 +109,12 @@ var definedFuncs = {
             console.error("Error: Unkown type", type)
         }
     },
-    printLine: function(type,value) {
-        this.printf(type,value)
+    printLine: function (type, value) {
+        this.printf(type, value)
         main_kernel_data.push(`new_line`)
     },
-    printAddr: function (type,value,index) {
-        if(type == "s" || type == "%s") {
+    printAddr: function (type, value, index) {
+        if (type == "s" || type == "%s") {
             main_kernel_data.push(`put_string ${value}, ${index}`)
         } else if (type == "i" || type == "%i") {
             main_kernel_data.push(`put_int ${value}, ${index}`)
@@ -123,16 +124,12 @@ var definedFuncs = {
             console.error("Error: Unkown type", type)
         }
     },
-    increment: function(variable, num) {
-        //variable = String(variable)
-        //num = Number(num)
-    },
-    label: function(name) {
+    label: function (name) {
         main_kernel_data.push(`${name}:`)
     },
-    if: function(value1, comparer, value2) {
+    if: function (value1, comparer, value2) {
         var comparebyte = "cmp"
-        if( (value1[0] == "[" && value1.at(-1) == "]")  || (value2[0] == "[" && value2.at(-1) == "]")) {
+        if ((value1[0] == "[" && value1.at(-1) == "]") || (value2[0] == "[" && value2.at(-1) == "]")) {
             comparebyte = "cmpb"
         }
         main_kernel_data.push(
@@ -142,19 +139,59 @@ var definedFuncs = {
             `${pseudoLabel()}:` //create the label
         )
     },
-    endif: function() {
+    extif: function (value1a, comparer1, value2a, type, value1b, comparer2, value2b) {
+        var comparebyte = "cmp"
+            var comparebyte2 = "cmp"
+
+            if ((value1a[0] == "[" && value1a.at(-1) == "]") || (value2a[0] == "[" && value2a.at(-1) == "]")) {
+                comparebyte = "cmpb"
+            }
+            if ((value1b[0] == "[" && value1b.at(-1) == "]") || (value2b[0] == "[" && value2b.at(-1) == "]")) {
+                comparebyte2 = "cmpb"
+            }
+        
+        if (type == "&&" || type.toUpperCase() == "AND") {
+            main_kernel_data.push(
+                `${comparebyte} ${value1a}, ${value2a}`, //check
+                `${compares[comparer1]} ${pseudoLabel()}`, //jump to pseudo label if condition is met
+                `jmp ${pseudoLabel("next")}`, //otherwise jump to the escape one
+                `${pseudoLabel()}:`, //create the "if" label
+                `   ${comparebyte2} ${value1b}, ${value2b}`,
+                `   ${compares[comparer2]} ${pseudoLabel("secnext")}`,
+                `   jmp ${pseudoLabel("next")}`,
+                `   ${pseudoLabel("secnext")}:` //final label
+            )
+        } else if (type == "||" || type.toUpperCase() == "OR") {
+            main_kernel_data.push(
+                `${comparebyte} ${value1a}, ${value2a}`,
+                `${compares[comparer1]} ${pseudoLabel()}`, 
+                `${comparebyte2} ${value1b}, ${value2b}`, //if false, try the second one
+                `${compares[comparer2]} ${pseudoLabel()}`,
+                `jmp ${pseudoLabel("next")}`,
+                `${pseudoLabel()}:` //true
+            )
+        }
+    },
+    endif: function () {
         incPseudoLabel()
         main_kernel_data.push(
-            `jmp ${pseudoLabel()}`, //the "finish" label
             `${pseudoLabel()}:`
         )
     },
-    jump: function(destination) {
+    else: function () {
+        incPseudoLabel()
+        main_kernel_data.push(
+            `jmp ${pseudoLabel("secnext")}`, //exit the if statement
+            `${pseudoLabel()}:`, //else label
+        )
+        incPseudoLabel()
+    },
+    jump: function (destination) {
         main_kernel_data.push(
             `jmp ${destination}`
         )
     },
-    newLine: function() {
+    newLine: function () {
         main_kernel_data.push(
             `new_line`
         )
@@ -188,25 +225,25 @@ module.exports = function run(code) {
 
     for (line = 0; line < code.length; line++) {
         var lineContents = code[line]
-        for (wordNumber = lineContents.length -1; wordNumber >= 0; wordNumber--) {
+        for (wordNumber = lineContents.length - 1; wordNumber >= 0; wordNumber--) {
             var wordContents = lineContents[wordNumber]
 
-            if(wordContents[0] == "*") { //IF POINTER
+            if (wordContents[0] == "*") { //IF POINTER
                 lineContents[wordNumber] = `[${wordContents.slice(1)}]`
             }
 
-            if(Object.keys(definedFuncs).includes(wordContents)) { //IF FUNCTION
+            if (Object.keys(definedFuncs).includes(wordContents)) { //IF FUNCTION
                 var argbuff = []
-                for(i = 1; i <= definedFuncs[wordContents].length; i++)  { //iterate over how many arguments the function takes
+                for (i = 1; i <= definedFuncs[wordContents].length; i++) { //iterate over how many arguments the function takes
                     argbuff.push(String(lineContents[wordNumber + i]))
                 }
                 definedFuncs[wordContents](...argbuff)
                 console.log(`${wordContents}(${argbuff})`)
             }
 
-            if(Object.keys(definedSpecials).includes(wordContents)) { //IF SPECIAL
-                definedSpecials[wordContents](lineContents.slice(wordNumber+1))
-                console.log(`${wordContents}([${lineContents.slice(wordNumber+1)}])`)
+            if (Object.keys(definedSpecials).includes(wordContents)) { //IF SPECIAL
+                definedSpecials[wordContents](lineContents.slice(wordNumber + 1))
+                console.log(`${wordContents}([${lineContents.slice(wordNumber + 1)}])`)
             }
         }
     }
