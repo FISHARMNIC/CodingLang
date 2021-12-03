@@ -9,5 +9,4 @@ navigate to JScompiler and run index.js in node
 4. grub cli tools
 
 - on windows
-1. Make in the shellExec variable in js, add the following at the end, before the last line
-### wsl -t
+1. Make in the shellExec variable in js, add the `wsl -t` at the end, before the last line
