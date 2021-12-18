@@ -136,5 +136,3 @@ put_int_loop_start:
     call put_int_loop_start # put each digit into the stack 
     # popa
 .endm
-
-

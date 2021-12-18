@@ -16,6 +16,8 @@ printLine(%s, *myString)
 printLine(%c, *myChar)
 ++ myChar
 printLine(%c, *myChar)
+setVar(myNumber, 3)
+printLine(%i, *myNumber)
 //--------------------------
 
 //---------else--------
@@ -43,3 +45,42 @@ else
     printLine(%s, *incorrect)
 endif
 //---------------
+
+
+//---------var reassignment-------
+type char myChar = 'A'
+type int myInt = 123
+type string myString = "Hello_World"
+
+printLine(%c, *myChar)
+setVar(myChar, 'C')
+printLine(%c, *myChar)
+
+newLine
+
+printLine(%i, *myInt)
+setVar(myInt, 4567)
+printLine(%i, *myInt)
+
+newLine
+
+printLine(%s, *myString)
+setString(myString, "Adios_Mundo")
+printLine(%s, *myString)
+//----------
+
+
+//------functions and macros----
+function jon {
+    printLine(%c, 'A')
+}
+
+call jon
+
+macro jon(c,n) {
+    printLine(%c,c)
+    printLine(%i,n)
+}
+
+jon('B',13)
+//--------

@@ -4,24 +4,14 @@
 .global kernel_entry
 
 _lineNumber: .long 0
-myNumber: .long 7
-correct: .asciz "correct"
-incorrect: .asciz "incorrect"
+S3996: .asciz "hello_world!"
+S4546: .asciz "good_bye!"
 .include "./data.s"
 
 .section .text
 kernel_entry:
-cmpb [myNumber], 10
-jg AUTO0
-cmpb [myNumber], 5
-jl AUTO0
-jmp AUTO1
-AUTO0:
-put_string [correct]
+put_string S3996
 new_line
-jmp AUTO3
-AUTO1:
-put_string [incorrect]
+put_string S4546
 new_line
-AUTO3:
    ret

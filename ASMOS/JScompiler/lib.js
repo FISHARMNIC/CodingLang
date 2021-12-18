@@ -55,34 +55,27 @@ kernel_entry:
 `
 }
 
-var shellExec = `
-echo 1
-#assemble boot.s file
-as --32 boot/boot.s -o compiled/boot.o
-
-echo 2
-#compile kernel.c file
-if (as --32 kernel.s -o compiled/kernel.o) ; then
-    echo 3
-    #linking the kernel with kernel.o and boot.o files
-    if (ld -m elf_i386 -T boot/linker.ld compiled/kernel.o compiled/boot.o -o compiled/MyOS.bin -nostdlib) ; then
-        echo 4
-        #check MyOS.bin file is x86 multiboot file or not
-        grub-file --is-x86-multiboot compiled/MyOS.bin
-
-        #building the iso file
-        mkdir -p isodir/boot/grub
-        cp compiled/MyOS.bin isodir/boot/MyOS.bin
-        cp boot/grub.cfg isodir/boot/grub/grub.cfg
-        grub-mkrescue -o compiled/MyOS.iso isodir
-
-        #run the qemu
-        qemu-system-x86_64 -cdrom compiled/MyOS.iso
-    fi
-fi
-`
+var shellExec = function () {
+    exec("./shellExec.sh", (error, stdout, stderr) => {
+        if (error) {
+            console.log(`error: ${error.message}`);
+            return;
+        }
+        if (stderr) {
+            console.log(`stderr: ${stderr}`);
+            return;
+        }
+        console.log(`stdout: ${stdout}`);
+    })
+}
 
 var pseudolbl = 0
+var userStrings = {}
+var line;
+var wordNumber;
+var inFunction;
+var macroParams = []
+var lineContents
 
 function pseudoLabel(next) {
     if (next == "next") {
@@ -95,6 +88,11 @@ function pseudoLabel(next) {
 
 function incPseudoLabel() {
     pseudolbl++
+}
+
+function tError(m) {
+    console.log(`Error at line ${line + 1}: ${m}`)
+    process.exit(1)
 }
 
 var definedFuncs = {
@@ -141,15 +139,15 @@ var definedFuncs = {
     },
     extif: function (value1a, comparer1, value2a, type, value1b, comparer2, value2b) {
         var comparebyte = "cmp"
-            var comparebyte2 = "cmp"
+        var comparebyte2 = "cmp"
 
-            if ((value1a[0] == "[" && value1a.at(-1) == "]") || (value2a[0] == "[" && value2a.at(-1) == "]")) {
-                comparebyte = "cmpb"
-            }
-            if ((value1b[0] == "[" && value1b.at(-1) == "]") || (value2b[0] == "[" && value2b.at(-1) == "]")) {
-                comparebyte2 = "cmpb"
-            }
-        
+        if ((value1a[0] == "[" && value1a.at(-1) == "]") || (value2a[0] == "[" && value2a.at(-1) == "]")) {
+            comparebyte = "cmpb"
+        }
+        if ((value1b[0] == "[" && value1b.at(-1) == "]") || (value2b[0] == "[" && value2b.at(-1) == "]")) {
+            comparebyte2 = "cmpb"
+        }
+
         if (type == "&&" || type.toUpperCase() == "AND") {
             main_kernel_data.push(
                 `${comparebyte} ${value1a}, ${value2a}`, //check
@@ -164,7 +162,7 @@ var definedFuncs = {
         } else if (type == "||" || type.toUpperCase() == "OR") {
             main_kernel_data.push(
                 `${comparebyte} ${value1a}, ${value2a}`,
-                `${compares[comparer1]} ${pseudoLabel()}`, 
+                `${compares[comparer1]} ${pseudoLabel()}`,
                 `${comparebyte2} ${value1b}, ${value2b}`, //if false, try the second one
                 `${compares[comparer2]} ${pseudoLabel()}`,
                 `jmp ${pseudoLabel("next")}`,
@@ -195,12 +193,119 @@ var definedFuncs = {
         main_kernel_data.push(
             `new_line`
         )
+    },
+    setVar: function (name, value) {
+        main_kernel_data.push(
+            `set_var ${name}, ${value}`
+        )
+    },
+    setString: function (addr, newString) {
+        if (newString[0] == '"' || newString[0] == "'") {
+            newString = newString.slice(1, -1) // remove extra quotes
+        }
+        if (userStrings[addr] == undefined) {
+            tError(`String "${newString}"" not defined`)
+        }
+        if (newString.length > userStrings[addr].length) {
+            tError(`New String "${newString}" is longer than "${userStrings[addr]}"`)
+        }
+        console.log(userStrings)
+        newString.split("").forEach((x, ind) => { //for each char
+            main_kernel_data.push(
+                `set_var ${addr} + ${ind}, '${x}'` // memory[stringStart + offset] = newString[offset]
+            )
+        })
+    },
+    setStringUnsafe: function (addr, newString) {
+        if (newString[0] == '"' || newString[0] == "'") {
+            newString = newString.slice(1, -1) // remove extra quotes
+        }
+        if (userStrings[addr] == undefined) {
+            tError(`String "${newString}"" not defined`)
+        }
+        if (newString.length > userStrings[addr].length) {
+            tError(`New String "${newString}" is longer than "${userStrings[addr]}"`)
+        }
+        definedSpecials.type(["string", newString, "=", `"${newString}"`])
+        main_kernel_data.push(
+            `push %ebx`,
+            `push %edx`,
+            `mov %ebx, 0`,
+            `${pseudoLabel()}:`, //loop the length of the string
+            `lea %edx, ${addr}`, //get the addres of the string
+            `add %edx, %ebx`, //add the offset
+            `mov %edx, [${newString} + %ebx]`,
+            `inc %ebx`,
+            `cmp %ebx, ${newString.length}`,
+            `jl ${pseudoLabel()}`, // repeat until finished string
+            `pop %edx`,
+            `pop %ebx`, //restore ebx
+        )
+        incPseudoLabel()
+    },
+    strcpy: function (str1, str2) { // string/var , var
+        if (userStrings[str1] != undefined) { // var1 => var2
+            tError(`strcpy from vars to vars not implemented`)
+        } else { //is just string
+            this.setString(str2, str1) //set str2 to str1
+        }
+    },
+    ['function']: function (name, fbrac) {
+        inFunction = "func"
+        main_kernel_data.push(
+            `${name}:`
+        )
+    },
+    ['}']: function () {
+        if (inFunction == "func") {
+            main_kernel_data.push(
+                `ret`
+            )
+        } else {
+            macroParams = []
+            main_kernel_data.push(
+                `.endm`
+            )
+        }
+        inFunction = ""
+    },
+    call: function (func) {
+        main_kernel_data.push(
+            `call ${func}`
+        )
+    },
+    sip: function (string) {
+        var randString = "S" + String(Math.random()).slice(2,6)
+        data_section_data.push(`${randString}: .asciz ${string}`)
+        //lineContents[wordNumber] = "[" + randString + "]"
+        lineContents[wordNumber] = randString
     }
 }
 
 var definedSpecials = {
     type: function (rest) {
+        if (rest[0] == "string") {
+            var temp = rest[3]
+            if (rest[3][0] == "'" || rest[3][0] == '"') {
+                temp = rest[3].slice(1, -1)
+            }
+            userStrings[rest[1]] = temp
+        }
         data_section_data.push(`${rest[1]}: ${typedefs[rest[0]]} ${rest[3]}`)
+    },
+    macro: function (rest) {
+        inFunction = "macro"
+        rest = rest.slice(0, -1) //remove the "{"
+        macroParams = rest.slice()
+        console.log("RESST",rest)
+        main_kernel_data.push(`.macro ${rest[0]} ${rest.slice(1).join(",")}`)
+        var ps = rest.slice(1).map((_,ind) => `V${ind}`)
+        var eString = `
+        definedFuncs[rest[0]] = function(${ps.join(",")}) {
+            main_kernel_data.push("${rest[0]} " + Object.values(arguments).join(","))
+        }`
+        console.log(eString)
+        eval(eString)
     },
     "++": function (rest) {
         main_kernel_data.push(`inc_var ${rest[0]}`)
@@ -216,18 +321,25 @@ var data_section_data = []
 var main_kernel_data = []
 
 module.exports = function run(code) {
+    code = code.replace(/\s+(?=(?:(?:[^"]*"){2})*[^"]*"[^"]*$)/gm, "_")
     code = code.split('\n').filter(x => x).map(x => {
         return x.split(/[\s,\(\)]+/) //split by: comma, space, parenthesis
     }).map(x => x.filter(n => n)) //remove the emptyness
 
-    var line;
-    var wordNumber;
-
     for (line = 0; line < code.length; line++) {
-        var lineContents = code[line]
+        lineContents = code[line]
+        if (inFunction == "macro") {
+            console.log("HIIII")
+            lineContents = lineContents.map(x => {
+                if (macroParams.includes(x)) {
+                    return "\\" + x
+                }
+                return x
+            })
+            console.log(lineContents)
+        }
         for (wordNumber = lineContents.length - 1; wordNumber >= 0; wordNumber--) {
             var wordContents = lineContents[wordNumber]
-
             if (wordContents[0] == "*") { //IF POINTER
                 lineContents[wordNumber] = `[${wordContents.slice(1)}]`
             }
@@ -249,15 +361,5 @@ module.exports = function run(code) {
     }
     console.log(code)
     fs.writeFileSync('kernel.s', outConts.header + data_section_data.join("\n") + outConts.middle + main_kernel_data.join("\n") + outConts.footer)
-    exec(shellExec, (error, stdout, stderr) => {
-        if (error) {
-            console.log(`error: ${error.message}`);
-            return;
-        }
-        if (stderr) {
-            console.log(`stderr: ${stderr}`);
-            return;
-        }
-        console.log(`stdout: ${stdout}`);
-    })
+    shellExec()
 }
