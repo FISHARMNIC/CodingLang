@@ -1,12 +1,12 @@
 # CodingLang
-made for linux or windows WSL
+made for kali linux or windows kali WSL
 ---
 navigate to JScompiler and run index.js in node
 - make sure to have
-1. gnu gas
+1. gnu gas / linux binutils
 2. xorriso
 3. qemu
 4. grub cli tools
 
 - on windows
-1. Make in the shellExec variable in js, add the `wsl -t` at the end, before the last line
+1. Open the `shellExec.sh` file and add `wsl -t` before the `qemu` line (2nd last)
