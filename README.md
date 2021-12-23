@@ -1,5 +1,5 @@
 # CodingLang
-made for kali linux or windows kali WSL
+made for linux or windows WSL
 ---
 
 ### What is This?
@@ -11,7 +11,7 @@ This program takes code that you write and compiles it into assembly language. T
 3. qemu
 4. grub cli tools
 5. nodeJS newest version (Important! this program uses prototype functions that are only present in the newest version)
-6. Kali linux for WSL (if on windows)
+6. (preferrably Kali) linux for WSL (if on windows)
 
 ### How To?
 
