@@ -76,7 +76,7 @@ var wordNumber;
 var inFunction;
 var macroParams = []
 var lineContents
-
+var userArrays = {}
 function pseudoLabel(next) {
     if (next == "next") {
         return `AUTO${pseudolbl + 1}`
@@ -96,7 +96,7 @@ function tError(m) {
 }
 
 function randomStringName() {
-    return "S" + String(Math.random()).slice(2, 6) 
+    return "S" + String(Math.random()).slice(2, 6)
 }
 
 var definedFuncs = {
@@ -204,6 +204,7 @@ var definedFuncs = {
         )
     },
     setString: function (addr, newString) {
+        console.log("SETTING", addr, newString)
         if (newString[0] == '"' || newString[0] == "'") {
             newString = newString.slice(1, -1) // remove extra quotes
         }
@@ -213,7 +214,7 @@ var definedFuncs = {
         if (newString.length > userStrings[addr].length) {
             tError(`New String "${newString}" is longer than "${userStrings[addr]}"`)
         }
-        console.log(userStrings)
+        //console.log(userStrings)
         newString.split("").forEach((x, ind) => { //for each char
             main_kernel_data.push(
                 `set_var ${addr} + ${ind}, '${x}'` // memory[stringStart + offset] = newString[offset]
@@ -221,19 +222,13 @@ var definedFuncs = {
         })
     },
     setStringUnsafe: function (addr, newString) {
-        if (newString[0] == '"' || newString[0] == "'") {
-            newString = newString.slice(1, -1) // remove extra quotes
-        }
-        if (userStrings[addr] == undefined) {
-            tError(`String "${newString}"" not defined`)
-        }
-        if (newString.length > userStrings[addr].length) {
-            tError(`New String "${newString}" is longer than "${userStrings[addr]}"`)
-        }
         var randString = randomStringName()
         definedSpecials.type(["string", randString, "=", `"${newString}"`])
         main_kernel_data.push(
-            `movsw ${addr}, ${randString} `
+            `mov %cx, 3   # how many bytes to copy (numeric value)`,
+            `lea %si, [${randString}]      # offset new string into SI`,
+            `lea %di, [${addr}]   # offset destination string into DI`,
+            `rep movsb`
         )
     },
     strcpy: function (str1, str2) { // string/var , var
@@ -279,12 +274,12 @@ var definedFuncs = {
     "++": function (v) {
         main_kernel_data.push(`inc_var ${v}`)
         lineContents[wordNumber] = v
-        lineContents[wordNumber+1] = ""
+        lineContents.splice(wordNumber + 1,1)
     },
     "--": function (v) {
         main_kernel_data.push(`dec_var ${v}`)
         lineContents[wordNumber] = v
-        lineContents[wordNumber+1] = ""
+        linelineContents.splice(wordNumber + 1,1)
     },
     addVar: function (v, val) {
         main_kernel_data.push(`add_var ${v}, ${val}`)
@@ -298,6 +293,28 @@ var definedFuncs = {
     mulVars: function (v, val) {
         main_kernel_data.push(`mul_vars ${v}, ${val}`)
     },
+    arrayIndex: function (array, index) {
+        console.log("!!!!", array, index)
+        if (String(index) == "0") {
+            lineContents[wordNumber] = array
+            //lineContents.splice(wordNumber + 1,1)
+        } else if (!parseInt(index)) { //if a variable
+            main_kernel_data.push(
+                //`push %eax`,
+                //`push %ebx`,
+                `mov %eax, [${index}]`,
+                `mov %ebx, ${userArrays[array]}`,
+                `mul %ebx`,
+            )
+            lineContents[wordNumber] = `[${array} + %eax]`
+        } else {
+            //lineContents[wordNumber] = array + "+" + userArrays[array].slice(0, index).reduce((p, c) => p + c) // add all of the item's lengths up to the desired index to get to the starting position
+            lineContents[wordNumber] = array + "+" + (userArrays[array]*index)
+            //console.log(array + "+" + (userArrays[array]*index))
+        }
+        lineContents.splice(wordNumber + 1,1)
+        lineContents.splice(wordNumber + 1,1)
+    }
 }
 
 var definedSpecials = {
@@ -309,20 +326,44 @@ var definedSpecials = {
             }
             userStrings[rest[1]] = temp
         }
+
+        if (rest.slice(3).length > 1) { //if array
+            if (rest[0] == "string") {
+                //userArrays[rest[1]] = []
+                var arr = rest.slice(3)
+                var longest = (arr.reduce((a, b) => a.length > b.length ? a : b)).length
+                arr = arr.map(x => x.slice(0,-1) + " ".repeat(longest - x.length) + '"')
+                rest[3] = arr.join(",")
+                userArrays[rest[1]] = longest - 1 // minus 2 quotes + null
+                // arr.forEach(x => {
+                //     userArrays[rest[1]].push(x.length - 1) //save each items length - brackets + the null char
+                // })
+            } else if(rest[0] == "int") {
+                userArrays[rest[1]] = 4
+                rest[3] = rest.slice(3).join(",")
+                // rest.slice(3).forEach(x => {
+                //     userArrays[rest[1]].push(4) //.long numbers have 4 bytes
+                // })
+            }
+            
+            //console.log("!!!!!", userArrays)
+        }
+        //console.log(`${rest[1]}: ${typedefs[rest[0]]} ${rest[3]}`)
+        //process.exit(0)
         data_section_data.push(`${rest[1]}: ${typedefs[rest[0]]} ${rest[3]}`)
     },
     macro: function (rest) {
         inFunction = "macro"
         rest = rest.slice(0, -1) //remove the "{"
         macroParams = rest.slice()
-        console.log("RESST", rest)
+        //console.log("RESST", rest)
         main_kernel_data.push(`.macro ${rest[0]} ${rest.slice(1).join(",")}`)
         var ps = rest.slice(1).map((_, ind) => `V${ind}`)
         var eString = `
         definedFuncs[rest[0]] = function(${ps.join(",")}) {
             main_kernel_data.push("${rest[0]} " + Object.values(arguments).join(","))
         }`
-        console.log(eString)
+        //console.log(eString)
         eval(eString)
     },
     mathSolve: function (code) {
@@ -334,7 +375,7 @@ var definedSpecials = {
         }
         code = code.join("")
         var symbols = code.split(/[0-9,a-z,A-Z]+/).slice(1, -1)
-        var code = code.split(/[+,*,\/,-]+/).map(x => parseInt(x)? parseInt(x): `[${x}]`)
+        var code = code.split(/[+,*,\/,-]+/).map(x => parseInt(x) ? parseInt(x) : `[${x}]`)
         //console.log(code, symbols)
         var beg = code[0]
         var res
@@ -367,47 +408,69 @@ var data_section_data = []
 var main_kernel_data = []
 
 module.exports = function run(code) {
+    code = code.replace(new RegExp("\t","gm"), "")
+    console.log(code)
     code = code.replace(/\s+(?=(?:(?:[^"]*"){2})*[^"]*"[^"]*$)/gm, "_") //add underscores in quotes
-    //code = code.replace(/\ \"/gm, "sip ")
+    
     code = code.split('\n').filter(x => x).map(x => {
         return x.split(/[\s,\(\)]+/) //split by: comma, space, parenthesis
-    }).map(x => x.filter(n => n)).map(y => {
-        return y.map(x => {
-            console.log("o",x[0])
-            if(x[0] == '"' && y[0] != "type") { // if the first letter is " and im not defining a variable
+    }).map(x => x.filter(n => n))
+    
+    for(yPos = 0; yPos < code.length; yPos++) {
+        var y = code[yPos]
+        for(xPos = 0; xPos < y.length; xPos++) {
+            var x = y[xPos]
+            
+            
+            if (x[0] == '"' && y[0] != "type") { // if the first letter is " and im not defining a variable
                 var randString = randomStringName() // turn in-place strings into SIP references
                 data_section_data.push(`${randString}: .asciz ${x}`)
-                return randString
+                code[yPos][xPos] = randString
             }
-            return x
-        })
-    }) //remove the emptyness
+            if(x.at(-1) == "]") {
+                var ret = [`arrayIndex`, x.slice(0,x.indexOf("[")),x.slice(x.indexOf("[")+1,-1)]
+                code[yPos][xPos] = ""
+                code[yPos].splice(xPos, 0, ...ret);
+                console.log("REPL", code[yPos])
+            }
 
+            //code[yPos][xPos] = x.replace(/_/gm, " ") //redo the spaces
+        }
+    }
+
+    console.log("PARSED OUT___", code)
+    
+    /*
+    
+    */
     for (line = 0; line < code.length; line++) {
         lineContents = code[line]
         if (inFunction == "macro") {
-            console.log("HIIII")
+            //console.log("HIIII")
             lineContents = lineContents.map(x => {
                 if (macroParams.includes(x)) {
                     return "\\" + x
                 }
                 return x
             })
-            console.log(lineContents)
+            //console.log(lineContents)
         }
+        lineContents = lineContents.filter(_Wrd => _Wrd)
         for (wordNumber = lineContents.length - 1; wordNumber >= 0; wordNumber--) {
+            
             var wordContents = lineContents[wordNumber]
             if (wordContents[0] == "*") { //IF POINTER
                 lineContents[wordNumber] = `[${wordContents.slice(1)}]`
             }
 
+            //console.log("READING", wordContents, Object.keys(definedFuncs).includes(wordContents), lineContents )
             if (Object.keys(definedFuncs).includes(wordContents)) { //IF FUNCTION
                 var argbuff = []
                 for (i = 1; i <= definedFuncs[wordContents].length; i++) { //iterate over how many arguments the function takes
                     argbuff.push(String(lineContents[wordNumber + i]))
                 }
                 definedFuncs[wordContents](...argbuff)
-                console.log(`${wordContents}(${argbuff})`)
+                console.log(`CALLED ${wordContents}(${argbuff})`)
             }
 
             if (Object.keys(definedSpecials).includes(wordContents)) { //IF SPECIAL
@@ -415,8 +478,9 @@ module.exports = function run(code) {
                 console.log(`${wordContents}([${lineContents.slice(wordNumber + 1)}])`)
             }
         }
+        console.log(lineContents)
     }
-    console.log(code)
+    //console.log("---",code,"---")
     fs.writeFileSync('kernel.s', outConts.header + data_section_data.join("\n") + outConts.middle + main_kernel_data.join("\n") + outConts.footer)
-    shellExec()
+    if(process.argv[3] != "debug") shellExec()
 }

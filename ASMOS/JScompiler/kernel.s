@@ -4,24 +4,36 @@
 .global kernel_entry
 
 _lineNumber: .long 0
-S3231: .asciz "less_than_ten"
-S1466: .asciz "greater_than_ten"
-myNumber: .long 1
+S4486: .asciz "Adios"
+myStrings: .asciz "hello","how  ","are  ","you  "
+myNumbers: .long 1,2,3,4
+readIndex: .long 0
+S1833: .asciz "S4486"
 .include "./data.s"
 
 .section .text
 kernel_entry:
-put_int [myNumber]
+put_int myNumbers
 new_line
-cmpb [myNumber], 10
+put_int myNumbers+12
+new_line
+loopStart:
+mov %eax, [readIndex]
+mov %ebx, 6
+mul %ebx
+put_string [myStrings + %eax]
+new_line
+inc_var readIndex
+cmpb [readIndex], 4
 jl AUTO0
 jmp AUTO1
 AUTO0:
-put_string S3231
-new_line
-jmp AUTO3
+jmp loopStart
 AUTO1:
-put_string S1466
+mov %cx, 3   # how many bytes to copy (numeric value)
+lea %si, [S1833]      # offset new string into SI
+lea %di, [myStrings+12]   # offset destination string into DI
+rep movsb
+put_string myStrings+12
 new_line
-AUTO3:
    ret

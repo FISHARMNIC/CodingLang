@@ -1,9 +1,17 @@
-type int myNumber = 1
+type string myStrings = "hello", "how", "are", "you"
+type int myNumbers = 1, 2, 3, 4
 
-printLine(%i, *myNumber)
+printLine(%i, myNumbers[0])
+printLine(%i, myNumbers[3])
 
-if (*myNumber < 10)
-    printLine(%s, "less than ten")
-else
-    printLine(%s, "greater than ten")
-endif
+
+type int readIndex = 0
+label loopStart
+    printLine(%s, myStrings[readIndex])
+    ++ readIndex
+    if(*readIndex < 4)
+        jump(loopStart)
+    endif
+
+setStringUnsafe(myStrings[2], "Adios") //not_working
+printLine(%s, myStrings[2])
