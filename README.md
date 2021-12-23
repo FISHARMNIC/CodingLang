@@ -3,14 +3,14 @@ made for kali linux or windows kali WSL
 ---
 
 ### What is This?
-This program takes code that you write and compiles it into assembly language. The out-file is then assembled and linked with a bootloader so that it can run freestanding! 
+This program takes code that you write and compiles it into assembly language. The out-file is then assembled and linked with a bootloader so that it can run freestanding! Keep in mind, the compiler is written in javascript. The program `index.js` holds your code under the string `mycode`.
 
 ### Requirements
 1. gnu gas / linux binutils
 2. xorriso
 3. qemu
 4. grub cli tools
-5. nodeJS newest version
+5. nodeJS newest version (Important! this program uses prototype functions that are only present in the newest version)
 6. Kali linux for WSL (if on windows)
 
 ### How To?
@@ -28,5 +28,5 @@ This program takes code that you write and compiles it into assembly language. T
 ### What do I do After I Run it?
 QEMU should pop up and present you with the grub bootloader. From there, click enter when you see the multiboot menu. When you're done, exit the program through the terminal (`ctrl + c`) or click the `x` on the QEMU window
 
-### What Can I do in This Language?
-Check `programs.txt` in the JScompiler folder to check out some samples!
+### How do I Write my Own Code?
+The program `index.js` in the folder `JScompiler` holds your code under the string `mycode` (The string can be multiLine). Go ahead and check out `programs.txt` in the `JScompiler` folder to see some samples!
