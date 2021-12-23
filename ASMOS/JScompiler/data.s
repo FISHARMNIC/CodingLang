@@ -48,6 +48,42 @@ _vga_entry:
     pop %ebx
 .endm
 
+.macro sub_var addr, value
+    push %ebx
+    mov %ebx, [\addr]
+    sub %ebx, \value
+    mov \addr, %ebx
+    pop %ebx
+.endm
+
+.macro mul_var addr, value
+    push %eax
+    push %ebx
+
+    mov %ebx, [\addr]
+    mov %eax, \value
+
+    mul %ebx
+    mov \addr, %eax
+
+    pop %ebx
+    pop %eax
+.endm
+
+.macro mul_vars addr, value
+    push %eax
+    push %ebx
+
+    mov %ebx, [\addr]
+    mov %eax, [\value]
+
+    mul %ebx
+    mov \addr, %eax
+
+    pop %ebx
+    pop %eax
+.endm
+
 .macro new_line
     add_var _lineNumber, 80
 .endm

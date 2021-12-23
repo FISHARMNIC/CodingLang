@@ -4,14 +4,11 @@
 .global kernel_entry
 
 _lineNumber: .long 0
-S3996: .asciz "hello_world!"
-S4546: .asciz "good_bye!"
+S4533: .asciz "Hello_World!"
 .include "./data.s"
 
 .section .text
 kernel_entry:
-put_string S3996
-new_line
-put_string S4546
+put_string S4533
 new_line
    ret

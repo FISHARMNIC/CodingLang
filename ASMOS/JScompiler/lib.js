@@ -95,6 +95,10 @@ function tError(m) {
     process.exit(1)
 }
 
+function randomStringName() {
+    return "S" + String(Math.random()).slice(2, 6) 
+}
+
 var definedFuncs = {
     printf: function (type, value) {
         if (type == "s" || type == "%s") {
@@ -226,22 +230,11 @@ var definedFuncs = {
         if (newString.length > userStrings[addr].length) {
             tError(`New String "${newString}" is longer than "${userStrings[addr]}"`)
         }
-        definedSpecials.type(["string", newString, "=", `"${newString}"`])
+        var randString = randomStringName()
+        definedSpecials.type(["string", randString, "=", `"${newString}"`])
         main_kernel_data.push(
-            `push %ebx`,
-            `push %edx`,
-            `mov %ebx, 0`,
-            `${pseudoLabel()}:`, //loop the length of the string
-            `lea %edx, ${addr}`, //get the addres of the string
-            `add %edx, %ebx`, //add the offset
-            `mov %edx, [${newString} + %ebx]`,
-            `inc %ebx`,
-            `cmp %ebx, ${newString.length}`,
-            `jl ${pseudoLabel()}`, // repeat until finished string
-            `pop %edx`,
-            `pop %ebx`, //restore ebx
+            `movsw ${addr}, ${randString} `
         )
-        incPseudoLabel()
     },
     strcpy: function (str1, str2) { // string/var , var
         if (userStrings[str1] != undefined) { // var1 => var2
@@ -275,11 +268,36 @@ var definedFuncs = {
         )
     },
     sip: function (string) {
-        var randString = "S" + String(Math.random()).slice(2,6)
+        var randString = randomStringName()
         data_section_data.push(`${randString}: .asciz ${string}`)
         //lineContents[wordNumber] = "[" + randString + "]"
         lineContents[wordNumber] = randString
-    }
+    },
+    mathResult: function () {
+        lineContents[wordNumber] = '%eax'
+    },
+    "++": function (v) {
+        main_kernel_data.push(`inc_var ${v}`)
+        lineContents[wordNumber] = v
+        lineContents[wordNumber+1] = ""
+    },
+    "--": function (v) {
+        main_kernel_data.push(`dec_var ${v}`)
+        lineContents[wordNumber] = v
+        lineContents[wordNumber+1] = ""
+    },
+    addVar: function (v, val) {
+        main_kernel_data.push(`add_var ${v}, ${val}`)
+    },
+    subVar: function (v, val) {
+        main_kernel_data.push(`sub_var ${v}, ${val}`)
+    },
+    mulVar: function (v, val) {
+        main_kernel_data.push(`mul_var ${v}, ${val}`)
+    },
+    mulVars: function (v, val) {
+        main_kernel_data.push(`mul_vars ${v}, ${val}`)
+    },
 }
 
 var definedSpecials = {
@@ -297,9 +315,9 @@ var definedSpecials = {
         inFunction = "macro"
         rest = rest.slice(0, -1) //remove the "{"
         macroParams = rest.slice()
-        console.log("RESST",rest)
+        console.log("RESST", rest)
         main_kernel_data.push(`.macro ${rest[0]} ${rest.slice(1).join(",")}`)
-        var ps = rest.slice(1).map((_,ind) => `V${ind}`)
+        var ps = rest.slice(1).map((_, ind) => `V${ind}`)
         var eString = `
         definedFuncs[rest[0]] = function(${ps.join(",")}) {
             main_kernel_data.push("${rest[0]} " + Object.values(arguments).join(","))
@@ -307,11 +325,39 @@ var definedSpecials = {
         console.log(eString)
         eval(eString)
     },
-    "++": function (rest) {
-        main_kernel_data.push(`inc_var ${rest[0]}`)
-    },
-    "--": function (rest) {
-        main_kernel_data.push(`dec_var ${rest[0]}`)
+    mathSolve: function (code) {
+        var types = {
+            "+": "add",
+            "-": "sub",
+            "*": "mul",
+            "/": "div",
+        }
+        code = code.join("")
+        var symbols = code.split(/[0-9,a-z,A-Z]+/).slice(1, -1)
+        var code = code.split(/[+,*,\/,-]+/).map(x => parseInt(x)? parseInt(x): `[${x}]`)
+        //console.log(code, symbols)
+        var beg = code[0]
+        var res
+        var outAsm = `
+mov %al, ${beg} \n`
+        for (i = 1; i < code.length; i++) {
+            if (types[symbols[i - 1]] == "div") {
+                outAsm += `
+mov %bl, ${code[i]}
+div %bl # stores in al
+mov %ah, 0 # clear the remainder
+`
+            } else if (types[symbols[i - 1]] == "mul") {
+                outAsm += `
+mov %bl, ${code[i]}
+mul %bl # stores back in al
+`
+            } else {
+                outAsm += `${types[symbols[i - 1]]} %al, ${code[i]}\n`
+                beg = res
+            }
+        }
+        main_kernel_data.push(outAsm)
     }
 }
 
@@ -321,10 +367,21 @@ var data_section_data = []
 var main_kernel_data = []
 
 module.exports = function run(code) {
-    code = code.replace(/\s+(?=(?:(?:[^"]*"){2})*[^"]*"[^"]*$)/gm, "_")
+    code = code.replace(/\s+(?=(?:(?:[^"]*"){2})*[^"]*"[^"]*$)/gm, "_") //add underscores in quotes
+    //code = code.replace(/\ \"/gm, "sip ")
     code = code.split('\n').filter(x => x).map(x => {
         return x.split(/[\s,\(\)]+/) //split by: comma, space, parenthesis
-    }).map(x => x.filter(n => n)) //remove the emptyness
+    }).map(x => x.filter(n => n)).map(y => {
+        return y.map(x => {
+            console.log("o",x[0])
+            if(x[0] == '"' && y[0] != "type") { // if the first letter is " and im not defining a variable
+                var randString = randomStringName() // turn in-place strings into SIP references
+                data_section_data.push(`${randString}: .asciz ${x}`)
+                return randString
+            }
+            return x
+        })
+    }) //remove the emptyness
 
     for (line = 0; line < code.length; line++) {
         lineContents = code[line]

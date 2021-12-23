@@ -84,3 +84,12 @@ macro jon(c,n) {
 
 jon('B',13)
 //--------
+
+//-------- SIMPLE MATH -----
+type int x = 10
+printLine(%i, ++ x)
+addVar(x,9)
+printLine(%i, x)
+mulVar(x,5)
+printLine(%i, x)
+//-----------
