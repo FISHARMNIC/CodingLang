@@ -1,6 +1,10 @@
 # CodingLang
 made for kali linux or windows kali WSL
 ---
+
+### What is This?
+This program takes code that you write and compiles it into assembly language. The out-file is then assembled and linked with a bootloader so that it can run freestanding! 
+
 ### Requirements
 1. gnu gas / linux binutils
 2. xorriso
