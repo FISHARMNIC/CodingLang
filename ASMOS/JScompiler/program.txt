@@ -1,0 +1,9 @@
+type int myNumber = 1
+
+printLine(%i, *myNumber)
+
+if (*myNumber < 10)
+    printLine(%s, "less than ten")
+else
+    printLine(%s, "greater than ten")
+endif
