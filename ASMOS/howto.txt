@@ -1,8 +1,0 @@
-open command prompt
-type "wsl"
-cd into the ASMOS folder
-run "./run.sh"
-
-open a second command prompt
-cd into the ASMOS folder
-run "qemu-system-x86_64.exe -cdrom compiled/MyOS.iso"
