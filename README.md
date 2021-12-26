@@ -48,19 +48,19 @@ To edit variables, one must use the following functions:
 This function is used for setting **characters and integers** only.  
 
 Allowed:  
-* `setVar(myCharacter, 'N')`  
-* `setVar(myInteger, 54321)`  
+     * `setVar(myCharacter, 'N')`  
+     * `setVar(myInteger, 54321)` <br>
 Not Allowed:  
-* `setVar(myInteger, "123")`
+     * `setVar(myInteger, "123")`
 #### setString(\<name>,\<value>)
 This function is used for settings string variables to another **constant string**. Note: it is important to know that new string length must be less than or equal to in length compared to the old string.  
 
 (where `myString` = "hello world!")
-Allowed: 
- * `setString(myString, "adios mundo!")` < same length as the original string
- * `setString(myString, "whats up")` < shorter than the original string
-Not Allowed:
- * `setString(myString, 1234)`
- * `setString(myString, "how are you today?" < longer than the original string
+Allowed:   
+     * `setString(myString, "adios mundo!")` < same length as the original string
+     * `setString(myString, "whats up")` < shorter than the original string
+Not Allowed:  
+     * `setString(myString, 1234)`
+     * `setString(myString, "how are you today?")` < longer than the original string
 
      
