@@ -35,7 +35,7 @@ The file `program.txt` in the folder `JScompiler` holds your code. When executin
 ---
 ## Data types
 There are three main data types: integers, strings, and characters. Characters must be put in single quotes ('...') where strings must be put in double quotes ("..."). Similar to C, the star (\*) indicates a pointer (described in depth later). When creating a variable, declare `type <var type> = <value>`. for arrays, simply seperate each value with a comma.  
-  ex. 
+ex. 
 * `type string myString = "hello world!"`   
 * `type int myInteger = 123456`  
 * `type char myCharacter = 'Q'` < note the single quotes  
@@ -45,4 +45,22 @@ There are three main data types: integers, strings, and characters. Characters m
 To edit variables, one must use the following functions:
 
 #### setVar(\<name>, \<value>)
+This function is used for setting **characters and integers** only.  
+
+Allowed:  
+* `setVar(myCharacter, 'N')`  
+* `setVar(myInteger, 54321)`  
+Not Allowed:  
+* `setVar(myInteger, "123")`
+#### setString(\<name>,\<value>)
+This function is used for settings string variables to another **constant string**. Note: it is important to know that new string length must be less than or equal to in length compared to the old string.  
+
+(where `myString` = "hello world!")
+Allowed: 
+ * `setString(myString, "adios mundo!")` < same length as the original string
+ * `setString(myString, "whats up")` < shorter than the original string
+Not Allowed:
+ * `setString(myString, 1234)`
+ * `setString(myString, "how are you today?" < longer than the original string
+
      
