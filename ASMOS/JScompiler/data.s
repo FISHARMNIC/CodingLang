@@ -50,6 +50,14 @@ _vga_entry:
     pop %ebx
 .endm
 
+.macro add_vars addr, value
+    push %ebx
+    mov %ebx, [\addr]
+    add %ebx, [\value]
+    mov \addr, %ebx
+    pop %ebx
+.endm
+
 .macro sub_var addr, value
     push %ebx
     mov %ebx, [\addr]
@@ -86,7 +94,6 @@ _vga_entry:
     pop %eax
 .endm
 
-
 _remainder:
     cmp %eax, %edx
     jge _NLL1
@@ -117,6 +124,23 @@ _remainder:
     popa
     inc_var _lineNumber
 .endm
+
+_clearVGA:
+    push %eax
+    push %ebx
+    mov %eax, 2000
+    mov %ebx, 0
+    _clearVGA_loopStart:
+        put_char 0, %ebx
+        inc %ebx
+        dec %eax
+        cmp %eax, 0
+        jne _clearVGA_loopStart
+    pop %ebx
+    pop %eax
+    movb _lineNumber, 0
+ret
+
 
 put_string_start:  
     # eax is the string start pointer

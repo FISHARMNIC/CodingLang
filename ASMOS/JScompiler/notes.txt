@@ -1,5 +1,13 @@
+add:
+
+constants : done
+char arrays
+
+
+
+
 # MAX_LENGTH_(NOT_INCLUDING_THE_HEAD)
-const int snakeMaxLength = 9
+onst int snakeMaxLength = 9
 
 # EACH_CELL_CONTAINS_A_POSSIBLE_STATE_FOR_THAT_SECTION_OF_THE_SNAKE 
 type int snakeXPositions = 40, newFilledArray(int, -1, $snakeMaxLength)
@@ -18,31 +26,14 @@ type int cellAtIteration = 0
 type int currentSnakeCellX = 0
 type int currentSnakeCellY = 0
 
-# NUMBER_OF_FRAMES_RENDERED
-type int renderedFrames = 0
-
-type int incrementIndex = 0
-
 # PRINT_INDIVIDUAL_PIXEL
 macro printAtPos(xP,yP) {
     evaluate(yP x 80 + xP)
     printAddr(%c, 219, _mathResult)
 }
 
--------------------------------------------------------
-# MAIN_RENDER_LOOP
-while(renderedFrames > -1) 
-    # ALWAYS_TRUE
-    clearScreen
-    call renderAndStep
-    sleep(67108863)
-endWhile
--------------------------------------------------------
-
-jump finish
-
-# RENDER_FUNCTION:_EACH_CELL_IS_CHECKED_AND_DRAWN_IF_PRESENT
-function renderAndStep {
+# MAIN_RENDER_LOOP:_EACH_CELL_IS_CHECKED_AND_DRAWN_IF_PRESENT
+function drawSnake {
     setVar(cellAtIteration, 0)
 
     while(cellAtIteration < $snakeMaxLength)
@@ -54,16 +45,12 @@ function renderAndStep {
             printAtPos(currentSnakeCellX, currentSnakeCellY)
 
             # MOVE_THE_CELL
-            addVars(currentSnakeCellX, snakeDirectionX)
-            addVars(currentSnakeCellY, snakeDirectionY)
-            # HEERE
-            intcpy(snakeXPositions[cellAtIteration], currentSnakeCellX)
-            intcpy(snakeYPositions[cellAtIteration], currentSnakeCellY)
+
+
+            intcpy(currentSnakeCellX, evaluate())
+            intcpy(snakeXPositions[cellAtIteration], evaluate(currentSnakeCellX + snakeDirectionX))
         endif
-        ++ cellAtIteration
     endWhile
-    //setVar(_lineNumber, 0)
-    printLine(%s, "done")
 }
 
-label finish
+call drawSnake
