@@ -4,50 +4,57 @@
 .global kernel_entry
 
 _lineNumber: .long 0
-S2300: .asciz "COPYING:_"
-S0565: .asciz "INTO:_"
-S1484: .asciz "RESULT_AT_ADDRESS:_"
-S9458: .asciz "--done--"
-destination: .long 1,2,3,4
-source: .long 4,3,2,1
-readIndex: .long 0
-S0134: .long 0
+_mathResult: .long 0
+S1174: .asciz "Program to calculate squares from: "
+S4361: .asciz " to "
+S3081: .asciz " squared is "
+S4953: .asciz "done!"
+S4857: .asciz "Program By: Nicolas Quijano - 2021"
+myNumbers: .long 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21
+index: .long 0
+atIndex: .long 0
+lastNumber: .long 21
 .include "./data.s"
 
 .section .text
 kernel_entry:
-FOR0:
-put_string S2300
-mov %eax, [readIndex]
+dec_var lastNumber
+put_string S1174
+put_int myNumbers
+put_string S4361
+mov %eax, [lastNumber]
 mov %ebx, 4
 mul %ebx
-put_int [source + %eax]
-put_string S0565
-mov %eax, [readIndex]
-mov %ebx, 4
-mul %ebx
-put_int [destination + %eax]
-mov %eax, [readIndex]
-mov %ebx, 4
-mul %ebx
-push %eax # stores result in stack
-mov %eax, [readIndex]
-mov %ebx, 4
-mul %ebx # stores result in eax
-pop %edx
-mov %cx, 4 
-lea %esi, [source + %edx]      # offset new string into SI
-lea %edi, [destination + %eax]   # offset destination string into DI
-rep movsb
-put_string S1484
-mov %eax, [readIndex]
-mov %ebx, 4
-mul %ebx
-put_int [destination + %eax]
+put_int [myNumbers + %eax]
 new_line
-inc_var readIndex
-cmpb [readIndex], 4
+FOR0:
+mov %eax, [index]
+mov %ebx, 4
+mul %ebx
+mov %cx, 4 
+lea %esi, [myNumbers + %eax]      # offset new string into SI
+lea %edi, atIndex   # offset destination string into DI
+rep movsb
+mov %eax, [index]
+mov %ebx, 4
+mul %ebx
+put_int [myNumbers + %eax]
+put_string S3081
+push %eax
+mov %eax, [atIndex]
+push %ebx
+mov %ebx, atIndex
+mul %ebx
+pop %ebx
+mov _mathResult, %eax
+pop %eax
+put_int _mathResult
+new_line
+inc_var index
+cmpb [index], 21
 jl FOR0 
 new_line
-put_string S9458
+put_string S4953
+new_line
+put_string S4857
    ret

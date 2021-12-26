@@ -1,3 +1,5 @@
+//Note: !!!!!!!!! ADD CHARACTER ARRAYS !!!!!!!!
+
 const fs = require('fs')
 const { exec } = require("child_process");
 
@@ -41,6 +43,7 @@ var outConts = {
 .global kernel_entry
 
 _lineNumber: .long 0
+_mathResult: .long 0
 `,
     middle:
         `
@@ -126,7 +129,7 @@ var definedFuncs = {
     printLine: function (type, value) {
         this.printNewLine()
         this.printf(type, value)
-        
+
     },
     printAddr: function (type, value, index) {
         if (type == "s" || type == "%s") {
@@ -237,7 +240,7 @@ var definedFuncs = {
     },
     setStringUnsafe: function (addr, newString) {
 
-        
+
         //-------------DIFFERENT_LENGTH_ARRAYS_DONT_WORK-----------
         //var randString = randomStringName()
         //console.log("new unsafe", randString, newString)
@@ -271,10 +274,10 @@ var definedFuncs = {
 
     },
     intcpy: function (str1, str2) {
-        this.setStringUnsafe(str1,str2)
+        this.setStringUnsafe(str1, str2)
     },
     strcpy: function (str1, str2) {
-        this.setStringUnsafe(str1,str2)
+        this.setStringUnsafe(str1, str2)
     },
     ['function']: function (name, fbrac) {
         inFunction = "func"
@@ -320,7 +323,7 @@ var definedFuncs = {
     "--": function (v) {
         main_kernel_data.push(`dec_var ${v}`)
         lineContents[wordNumber] = v
-        linelineContents.splice(wordNumber + 1, 1)
+        lineContents.splice(wordNumber + 1, 1)
     },
     addVar: function (v, val) {
         main_kernel_data.push(`add_var ${v}, ${val}`)
@@ -404,6 +407,7 @@ var definedFuncs = {
     },
     arrayLength: function (array) {
         lineContents[wordNumber] = userArrayLengths[array]
+        lineContents.splice(wordNumber + 1,1)
     }
 
 }
@@ -459,39 +463,48 @@ var definedSpecials = {
         //console.log(eString)
         eval(eString)
     },
-    mathSolve: function (code) {
-        var types = {
-            "+": "add",
-            "-": "sub",
-            "*": "mul",
-            "/": "div",
-        }
-        code = code.join("")
-        var symbols = code.split(/[0-9,a-z,A-Z]+/).slice(1, -1)
-        var code = code.split(/[+,*,\/,-]+/).map(x => parseInt(x) ? parseInt(x) : `[${x}]`)
-        //console.log(code, symbols)
-        var beg = code[0]
-        var res
-        var outAsm = `
-mov %al, ${beg} \n`
-        for (i = 1; i < code.length; i++) {
-            if (types[symbols[i - 1]] == "div") {
-                outAsm += `
-mov %bl, ${code[i]}
-div %bl # stores in al
-mov %ah, 0 # clear the remainder
-`
-            } else if (types[symbols[i - 1]] == "mul") {
-                outAsm += `
-mov %bl, ${code[i]}
-mul %bl # stores back in al
-`
-            } else {
-                outAsm += `${types[symbols[i - 1]]} %al, ${code[i]}\n`
-                beg = res
+    evaluate: function (code) {
+
+        main_kernel_data.push(`push %eax`,`mov %eax, ${parseInt(code[0]) ? code[0] : code[0].includes("[") ? code[0] : `[${code[0]}]`}`) // init in eax
+
+        console.log("#####", code, itemNum)
+
+        for (var itemNum = 1; itemNum < code.length - 1; itemNum += 2) { //go by ops
+            var item = {
+                current: code[itemNum],
+                previous: code[itemNum - 1],//parseInt(code[itemNum - 1]) ? code[itemNum - 1] : `[${code[itemNum - 1]}]`,
+                next: code[itemNum + 1]//parseInt(code[itemNum + 1]) ? code[itemNum + 1] : `[${code[itemNum + 1]}]`
             }
+            //oFile.push(`${types[item.current]} %eax, ${item.next}`)
+            main_kernel_data.push(...((inD) => {
+                switch (inD.current) {
+                    case "+":
+                        return [`add %eax, ${inD.next}`]
+                    case "-":
+                        return [`sub %eax, ${inD.next}`]
+                    case "x":
+                        return [
+                            `push %ebx`,
+                            `mov %ebx, ${inD.next}`,
+                            `mul %ebx`,
+                            `pop %ebx`
+                        ]
+                    case "/":
+                        return [
+                            `push %ebx`,
+                            `mov %ebx, ${inD.next}`,
+                            `div %ebx`,
+                            `pop %ebx`
+                        ]
+                }
+            })(item))
+            
         }
-        main_kernel_data.push(outAsm)
+
+        main_kernel_data.push(`mov _mathResult, %eax`, `pop %eax`)
+
+        lineContents[wordNumber] = '_mathResult'
+        
     }
 }
 
@@ -517,7 +530,7 @@ module.exports = function run(code) {
 
             if (x[0] == '"' && y[0] != "type") { // if the first letter is " and im not defining a variable
                 var randString = randomStringName() // turn in-place strings into SIP references
-                data_section_data.push(`${randString}: .asciz ${x}`)
+                data_section_data.push(`${randString}: .asciz ${x.replace(/_/gm, " ")}`)
                 code[yPos][xPos] = randString
                 userArrays[randString] = x.slice(1, -1)
             }

@@ -1,0 +1,125 @@
+└─$ node index.js program.txt
+type int myNumbers = 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+
+type int index = 0
+type int atIndex = 0
+type int lastNumber = arrayLength(myNumbers)
+-- lastNumber
+
+printf(%s, "Program to calculate squares from: ")
+printf(%i, myNumbers[0])
+printf(%s, " to ")
+printf(%i, myNumbers[lastNumber])
+
+printNewLine()
+
+while(index < arrayLength(myNumbers))
+    intcpy(atIndex, myNumbers[index])
+    printf(%i, myNumbers[index])
+    printf(%s, " squared is ")
+    printf(%i, evaluate(atIndex x atIndex))
+
+    printNewLine()
+    ++ index
+endWhile
+REPL [ 'printf', '%i', 'arrayIndex', 'myNumbers', '0', '' ]
+REPL [ 'printf', '%i', 'arrayIndex', 'myNumbers', 'lastNumber', '' ]
+REPL [ 'intcpy', 'atIndex', 'arrayIndex', 'myNumbers', 'index', '' ]
+REPL [ 'printf', '%i', 'arrayIndex', 'myNumbers', 'index', '' ]
+PARSED OUT___ [
+  [
+    'type', 'int', 'myNumbers',
+    '=',    '1',   '2',
+    '3',    '4',   '5',
+    '6',    '7',   '8',
+    '9',    '10',  '11',
+    '12',   '13',  '14',
+    '15',   '16',  '17',
+    '18',   '19',  '20'
+  ],
+  [ 'type', 'int', 'index', '=', '0' ],
+  [ 'type', 'int', 'atIndex', '=', '0' ],
+  [ 'type', 'int', 'lastNumber', '=', 'arrayLength', 'myNumbers' ],
+  [ '--', 'lastNumber' ],
+  [ 'printf', '%s', 'S8358' ],
+  [ 'printf', '%i', 'arrayIndex', 'myNumbers', '0', '' ],
+  [ 'printf', '%s', 'S2042' ],
+  [ 'printf', '%i', 'arrayIndex', 'myNumbers', 'lastNumber', '' ],
+  [ 'printNewLine' ],
+  [ 'while', 'index', '<', 'arrayLength', 'myNumbers' ],
+  [ 'intcpy', 'atIndex', 'arrayIndex', 'myNumbers', 'index', '' ],
+  [ 'printf', '%i', 'arrayIndex', 'myNumbers', 'index', '' ],
+  [ 'printf', '%s', 'S6050' ],
+  [ 'printf', '%i', 'evaluate', 'atIndex', 'x', 'atIndex' ],
+  [ 'printNewLine' ],
+  [ '++', 'index' ],
+  [ 'endWhile' ]
+]
+type([int,myNumbers,=,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20])
+[
+  'type', 'int', 'myNumbers',
+  '=',    '1',   '2',
+  '3',    '4',   '5',
+  '6',    '7',   '8',
+  '9',    '10',  '11',
+  '12',   '13',  '14',
+  '15',   '16',  '17',
+  '18',   '19',  '20'
+]
+type([int,index,=,0])
+[ 'type', 'int', 'index', '=', '0' ]
+type([int,atIndex,=,0])
+[ 'type', 'int', 'atIndex', '=', '0' ]
+CALLED arrayLength(myNumbers)
+type([int,lastNumber,=,20])
+[ 'type', 'int', 'lastNumber', '=', 20 ]
+CALLED --(lastNumber)
+[ 'lastNumber' ]
+CALLED printf(%s,S8358)
+[ 'printf', '%s', 'S8358' ]
+!!!! myNumbers 0
+CALLED arrayIndex(myNumbers,0)
+CALLED printf(%i,myNumbers)
+[ 'printf', '%i', 'myNumbers' ]
+CALLED printf(%s,S2042)
+[ 'printf', '%s', 'S2042' ]
+!!!! myNumbers lastNumber
+CALLED arrayIndex(myNumbers,lastNumber)
+CALLED printf(%i,[myNumbers + %eax])
+[ 'printf', '%i', '[myNumbers + %eax]' ]
+CALLED printNewLine()
+[ 'printNewLine' ]
+CALLED arrayLength(myNumbers)
+CALLED while(index,<,20)
+[ 'while', 'index', '<', 20 ]
+!!!! myNumbers index
+CALLED arrayIndex(myNumbers,index)
+{
+  S8358: 'Program_to_calculate_squares_from:_',
+  S2042: '_to_',
+  S6050: '_squared_is_',
+  myNumbers: 4
+} [myNumbers + %eax] myNumbers
+CALLED intcpy(atIndex,[myNumbers + %eax])
+[ 'intcpy', 'atIndex', '[myNumbers + %eax]' ]
+!!!! myNumbers index
+CALLED arrayIndex(myNumbers,index)
+CALLED printf(%i,[myNumbers + %eax])
+[ 'printf', '%i', '[myNumbers + %eax]' ]
+CALLED printf(%s,S6050)
+[ 'printf', '%s', 'S6050' ]
+##### [ 'atIndex', 'x', 'atIndex' ] undefined
+evaluate([atIndex,x,atIndex])
+CALLED printf(%i,_mathResult)
+[ 'printf', '%i', '_mathResult', 'atIndex', 'x', 'atIndex' ]
+CALLED printNewLine()
+[ 'printNewLine' ]
+CALLED ++(index)
+[ 'index' ]
+{ link: 'index', controller: '<', endValue: '20' }
+CALLED endWhile()
+[ 'endWhile' ]
+^C
+                                                                                                                                            
+┌──(kali㉿kali)-[~/Documents/ASMOS/JScompiler]
+└─$                                                                                                                                   130 ⨯

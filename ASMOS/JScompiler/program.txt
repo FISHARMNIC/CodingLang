@@ -1,21 +1,26 @@
-type int destination = 1,2,3,4
-type int source = 4,3,2,1
+type int myNumbers = 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21
 
-type int readIndex = 0
-while(readIndex < arrayLength(destination)) 
-    printf(%s, "COPYING: ")
-    printf(%i, source[readIndex])
-    printf(%s "INTO: ")
-    printf(%i, destination[readIndex])
+type int index = 0
+type int atIndex = 0
+type int lastNumber = arrayLength(myNumbers)
+-- lastNumber
 
-    intcpy(destination[readIndex], source[readIndex])
+printf(%s, "Program to calculate squares from: ")
+printf(%i, myNumbers[0])
+printf(%s, " to ")
+printf(%i, myNumbers[lastNumber])
 
-    printf(%s, "RESULT AT ADDRESS: ")
-    printf(%i, destination[readIndex])
+printNewLine()
+
+while(index < arrayLength(myNumbers))
+    intcpy(atIndex, myNumbers[index])
+    printf(%i, myNumbers[index])
+    printf(%s, " squared is ")
+    printf(%i, evaluate(atIndex x atIndex))
 
     printNewLine()
-
-    ++ readIndex
+    ++ index
 endWhile
 
-printLine(%s, "--done--")
+printLine(%s, "done!")
+printLine(%s, "Program By: Nicolas Quijano - 2021")
