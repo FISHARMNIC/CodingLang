@@ -34,6 +34,7 @@ The file `program.txt` in the folder `JScompiler` holds your code. When executin
 # Documentation
 ---
 ## Data types
+---
 There are three main data types: integers, strings, and characters. Characters must be put in single quotes ('...') where strings must be put in double quotes ("..."). Similar to C, the star (\*) indicates a pointer (described in depth later). When creating a variable, declare `type <var type> = <value>`. for arrays, simply seperate each value with a comma.  
 ex. 
 * `type string myString = "hello world!"`   
@@ -42,25 +43,47 @@ ex.
 * `type int myIntArray = 1, 2, 3, 4`  
 * `type string myStrArray = "hello", "world"`  
 
-To edit variables, one must use the following functions:
+## Arrays
+---
 
-#### setVar(\<name>, \<value>)
-This function is used for setting **characters and integers** only.  
+### Reading
+When accessing arrays, one places square brackets directly after the name of the array. In these brackets, can be put other variables, and constant, but **not functions/equations**. 
 
 Allowed:  
+	* `myArray[0]`  
+	* `myArray[myIndex]`  
+Not Allowed:  
+	* `myArray[myIndex + 1]`
+
+### arrayLength(\<array name>)
+This function returns the length of an array
+
+### Writing
+See strcpy/intcpy
+
+## Variable re-definition/editing
+---
+### setVar(\<name>, \<value>)
+This function is used for setting **characters and integers** only.  
+
+**Allowed:**  
      * `setVar(myCharacter, 'N')`  
      * `setVar(myInteger, 54321)` <br>
-Not Allowed:  
+**Not Allowed:**  
      * `setVar(myInteger, "123")`
-#### setString(\<name>,\<value>)
-This function is used for settings string variables to another **constant string**. Note: it is important to know that new string length must be less than or equal to in length compared to the old string.  
+	 
+### setString(\<name>,\<value>)
+This function is used for settings string variables to another **constant string**. Note: it is important to know that new string length must be less than or equal to in length compared to the old string. This function is very limited, but is safer than the `strcpy` method showed later. My compiler will warn you about any errors that occur when copying a string in this functoin.  
 
-(where `myString` = "hello world!")
-Allowed:   
-     * `setString(myString, "adios mundo!")` < same length as the original string
-     * `setString(myString, "whats up")` < shorter than the original string
-Not Allowed:  
-     * `setString(myString, 1234)`
+(where `myString` = "hello world!")  
+  
+**Allowed:**   
+	* `setString(myString, "adios mundo!")` < same length as the original string  
+    * `setString(myString, "whats up")` < shorter than the original string  
+**Not Allowed:**   
+     * `setString(myString, 1234)`  
      * `setString(myString, "how are you today?")` < longer than the original string
+	 * `setString(myString, myOtherString) < reference to another string
 
-     
+### setStringUnsafe/strcpy/intcpy (\<destination>,\<source>)
+These functions do **the same thing**, and copy memory from one address to another. This can be used for setting varaibles to other variables, and changing the contents of an array.
