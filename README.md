@@ -46,14 +46,20 @@ ex.
 ## Arrays
 ---
 
+### Important notes
+The size of each itme of a string array is set to that of the longest. That means that:   
+`type string strarr = "a", "bc", "def", "efgh"`  
+Will created as
+`type string strarr = "a   ", "bc  ", "def ", "efgh"`  
+
 ### Reading
 When accessing arrays, one places square brackets directly after the name of the array. In these brackets, can be put other variables, and constant, but **not functions/equations**. 
 
 Allowed:  
-	* `myArray[0]`  
-	* `myArray[myIndex]`  
+	* `myArray\[0]`  
+	* `myArray\[myIndex]`  
 Not Allowed:  
-	* `myArray[myIndex + 1]`
+	* `myArray\[myIndex + 1]`
 
 ### arrayLength(\<array name>)
 This function returns the length of an array
@@ -86,4 +92,16 @@ This function is used for settings string variables to another **constant string
 	 * `setString(myString, myOtherString) < reference to another string
 
 ### setStringUnsafe/strcpy/intcpy (\<destination>,\<source>)
-These functions do **the same thing**, and copy memory from one address to another. This can be used for setting varaibles to other variables, and changing the contents of an array.
+These functions do **the same thing**, and copy memory from one address to another. This can be used for setting varaibles to other variables, and changing the contents of an array. When copying strings, **the length of the source string must be less or equal to that of the destiantion, otherwise unwarned data corruption will occur**. For integers, the size of the source must be greater than or equal to the size of the destination. However, it is recommended to use `setVar` instead when possible.
+
+where   
+`myStrings` = "hello", "how", "are", "you"  
+`myStrings2` = "hi", "cow", "chicken", "beef"  
+`myInts` = 1, 2, 3, 4
+
+Allowed:  
+	* `strcpy(myStrings\[2], "Adios")`    
+	* `strcpy(myStrings\[0], myStrings2\[3]`  
+	* `intcpy(myInts\[0], 123)`  
+Not Allowed:  
+	* `strcpy(myStrings\[1], myStrings2\[2])` < note how "chicken" is longer than "how"
