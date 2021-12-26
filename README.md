@@ -33,5 +33,15 @@ The file `program.txt` in the folder `JScompiler` holds your code. When executin
 
 ### Documentation
 ---
-#### Variables
-There are two types of variables, integers and strings. When declaring a variable, simply type 
+#### Data types
+There are three main data types: integers, strings, and characters. Characters must be put in single quotes ('...') where strings must be put in double quotes ("..."). Similar to C, the star (\*) indicates a pointer (described in depth later). When creating a variable, declare `type <var type> = <value>`. for arrays, simply seperate each value with a comma.
+  ex. `type string myString = "hello world!"
+      `type int myInteger = 123456`
+      `type char myCharacter = 'Q' < note the single quotes
+      `type int myIntArray = 1, 2, 3, 4`
+      `type string myStrArray = "hello", "world"`
+
+To edit variables, one must use the following functions:
+
+##### setVar(<name>, <value>)
+####       
