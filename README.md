@@ -56,10 +56,10 @@ Will created as
 When accessing arrays, one places square brackets directly after the name of the array. In these brackets, can be put other variables, and constant, but **not functions/equations**. 
 
 Allowed:  
-	* `myArray\[0]`  
-	* `myArray\[myIndex]`  
+	* `myArray[0]`  
+	* `myArray[myIndex]`  
 Not Allowed:  
-	* `myArray\[myIndex + 1]`
+	* `myArray[myIndex + 1]`
 
 ### arrayLength(\<array name>)
 This function returns the length of an array
@@ -97,11 +97,14 @@ These functions do **the same thing**, and copy memory from one address to anoth
 where   
 `myStrings` = "hello", "how", "are", "you"  
 `myStrings2` = "hi", "cow", "chicken", "beef"  
-`myInts` = 1, 2, 3, 4
+`myInts` = 1, 2, 3, 4` 
 
 Allowed:  
-	* `strcpy(myStrings\[2], "Adios")`    
-	* `strcpy(myStrings\[0], myStrings2\[3]`  
-	* `intcpy(myInts\[0], 123)`  
+	* `strcpy(myStrings[2], "Adios")`    
+	* `strcpy(myStrings[0], myStrings2[3]`  
+	* `intcpy(myInts[0], 123)`  
+	* `strcpy(myStrings[myIndex], myStrings[myIndex2])`
 Not Allowed:  
-	* `strcpy(myStrings\[1], myStrings2\[2])` < note how "chicken" is longer than "how"
+	* `strcpy(myStrings[1], myStrings2[2])` < note how "chicken" is longer than "how"  
+	* `strcpy(myStrings[myIndex], myStrings[myIndex + 10])` < note how there is an equation  
+
