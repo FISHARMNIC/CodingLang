@@ -70,6 +70,13 @@ var shellExec = function () {
 }
 
 var pseudolbl = 0
+var forlblCounter = 0
+var forLoop = {
+    link: undefined,
+    controller: undefined,
+    endValue: undefined
+}
+
 var userStrings = {}
 var line;
 var wordNumber;
@@ -77,13 +84,18 @@ var inFunction;
 var macroParams = []
 var lineContents
 var userArrays = {}
+var userArrayLengths = {}
+var arrayIndexUseEax = false //use edx first so that the accum can be used later
+var twoIndexReferences = false
+var lineCorrectionLabelCounter = 0
+
 function pseudoLabel(next) {
     if (next == "next") {
-        return `AUTO${pseudolbl + 1}`
+        return `_AUTO${pseudolbl + 1}`
     } else if (next == "secnext") {
-        return `AUTO${pseudolbl + 2}`
+        return `_AUTO${pseudolbl + 2}`
     }
-    return `AUTO${pseudolbl}`
+    return `_AUTO${pseudolbl}`
 }
 
 function incPseudoLabel() {
@@ -112,8 +124,9 @@ var definedFuncs = {
         }
     },
     printLine: function (type, value) {
+        this.printNewLine()
         this.printf(type, value)
-        main_kernel_data.push(`new_line`)
+        
     },
     printAddr: function (type, value, index) {
         if (type == "s" || type == "%s") {
@@ -193,10 +206,11 @@ var definedFuncs = {
             `jmp ${destination}`
         )
     },
-    newLine: function () {
+    printNewLine: function () {
         main_kernel_data.push(
             `new_line`
         )
+
     },
     setVar: function (name, value) {
         main_kernel_data.push(
@@ -222,21 +236,45 @@ var definedFuncs = {
         })
     },
     setStringUnsafe: function (addr, newString) {
-        var randString = randomStringName()
-        definedSpecials.type(["string", randString, "=", `"${newString}"`])
+
+        
+        //-------------DIFFERENT_LENGTH_ARRAYS_DONT_WORK-----------
+        //var randString = randomStringName()
+        //console.log("new unsafe", randString, newString)
+        //definedSpecials.type(["string", randString, "=", `"${newString}"`])
+        //console.log(userArrays, newString, newString.slice(0,newString.indexOf("+")))
+        var parsed;
+        if (newString.includes("+")) {
+
+            if (newString.includes("[")) {
+                parsed = newString.slice(1, newString.indexOf(" "))
+            } else {
+                parsed = newString.slice(0, newString.indexOf("+"))
+            }
+        } else {
+            parsed = newString
+        }
+        console.log(userArrays, newString, parsed)
+        //process.exit(0)
+        if (twoIndexReferences) {
+            main_kernel_data.push(
+                `pop %edx` //restore edx from the stack
+            )
+        }
         main_kernel_data.push(
-            `mov %cx, 3   # how many bytes to copy (numeric value)`,
-            `lea %si, [${randString}]      # offset new string into SI`,
-            `lea %di, [${addr}]   # offset destination string into DI`,
+            `mov %cx, ${userArrays[parsed].length != undefined ? userArrays[newString].length : userArrays[parsed]} `, //${newString.length}   # how many bytes to copy (numeric value)`,
+            `lea %esi, ${newString}      # offset new string into SI`,
+            `lea %edi, ${addr}   # offset destination string into DI`,
             `rep movsb`
         )
+
+
     },
-    strcpy: function (str1, str2) { // string/var , var
-        if (userStrings[str1] != undefined) { // var1 => var2
-            tError(`strcpy from vars to vars not implemented`)
-        } else { //is just string
-            this.setString(str2, str1) //set str2 to str1
-        }
+    intcpy: function (str1, str2) {
+        this.setStringUnsafe(str1,str2)
+    },
+    strcpy: function (str1, str2) {
+        this.setStringUnsafe(str1,str2)
     },
     ['function']: function (name, fbrac) {
         inFunction = "func"
@@ -267,6 +305,9 @@ var definedFuncs = {
         data_section_data.push(`${randString}: .asciz ${string}`)
         //lineContents[wordNumber] = "[" + randString + "]"
         lineContents[wordNumber] = randString
+        userArrays[randString] = string
+        //console.log(string)
+        //process.exit(0)
     },
     mathResult: function () {
         lineContents[wordNumber] = '%eax'
@@ -274,12 +315,12 @@ var definedFuncs = {
     "++": function (v) {
         main_kernel_data.push(`inc_var ${v}`)
         lineContents[wordNumber] = v
-        lineContents.splice(wordNumber + 1,1)
+        lineContents.splice(wordNumber + 1, 1)
     },
     "--": function (v) {
         main_kernel_data.push(`dec_var ${v}`)
         lineContents[wordNumber] = v
-        linelineContents.splice(wordNumber + 1,1)
+        linelineContents.splice(wordNumber + 1, 1)
     },
     addVar: function (v, val) {
         main_kernel_data.push(`add_var ${v}, ${val}`)
@@ -295,26 +336,76 @@ var definedFuncs = {
     },
     arrayIndex: function (array, index) {
         console.log("!!!!", array, index)
+        //console.log(twoIndexReferences)
+        //process.exit(0)
         if (String(index) == "0") {
             lineContents[wordNumber] = array
             //lineContents.splice(wordNumber + 1,1)
         } else if (!parseInt(index)) { //if a variable
-            main_kernel_data.push(
-                //`push %eax`,
-                //`push %ebx`,
-                `mov %eax, [${index}]`,
-                `mov %ebx, ${userArrays[array]}`,
-                `mul %ebx`,
-            )
-            lineContents[wordNumber] = `[${array} + %eax]`
+            if (twoIndexReferences) { //if there are two items asing to be indexed
+                console.log("yup", arrayIndexUseEax)
+                //process.exit(0)
+                if (!arrayIndexUseEax) {
+                    var randString = randomStringName()
+                    definedSpecials.type(["int", randString, "=", `0`])
+
+                    main_kernel_data.push(
+                        `mov %eax, [${index}]`,
+                        `mov %ebx, ${userArrays[array]}`,
+                        `mul %ebx`,
+                        `push %eax # stores result in stack`,
+                    )
+                    //sthis.setVar(randString, `[${array} + %edx]`)
+                    lineContents[wordNumber] = `[${array} + %edx]`
+                    //lineContents[wordNumber] = `${array} + [${randString}]`
+                } else {
+                    main_kernel_data.push(
+                        `mov %eax, [${index}]`,
+                        `mov %ebx, ${userArrays[array]}`,
+                        `mul %ebx # stores result in eax`,
+                    )
+                    lineContents[wordNumber] = `[${array} + %eax]`
+                }
+                arrayIndexUseEax = !arrayIndexUseEax
+            } else {
+                main_kernel_data.push(
+                    //`push %eax`,
+                    //`push %ebx`,
+                    `mov %eax, [${index}]`,
+                    `mov %ebx, ${userArrays[array]}`,
+                    `mul %ebx`,
+                )
+                lineContents[wordNumber] = `[${array} + %eax]`
+            }
+
         } else {
             //lineContents[wordNumber] = array + "+" + userArrays[array].slice(0, index).reduce((p, c) => p + c) // add all of the item's lengths up to the desired index to get to the starting position
-            lineContents[wordNumber] = array + "+" + (userArrays[array]*index)
+            lineContents[wordNumber] = array + "+" + (userArrays[array] * index)
             //console.log(array + "+" + (userArrays[array]*index))
         }
-        lineContents.splice(wordNumber + 1,1)
-        lineContents.splice(wordNumber + 1,1)
+        lineContents.splice(wordNumber + 1, 1)
+        lineContents.splice(wordNumber + 1, 1)
+    },
+    "while": function (defVar, controller, endValue) {
+        forLoop.link = defVar
+        forLoop.endValue = endValue
+        forLoop.controller = controller
+        main_kernel_data.push(
+            `FOR${forlblCounter}:`,
+        )
+    },
+    endWhile: function () {
+        console.log(forLoop)
+        main_kernel_data.push(
+            `cmpb [${forLoop.link}], ${forLoop.endValue}`,
+            `${compares[forLoop.controller]} FOR${forlblCounter} `
+        )
+        forlblCounter++
+    },
+    arrayLength: function (array) {
+        lineContents[wordNumber] = userArrayLengths[array]
     }
+
 }
 
 var definedSpecials = {
@@ -332,20 +423,22 @@ var definedSpecials = {
                 //userArrays[rest[1]] = []
                 var arr = rest.slice(3)
                 var longest = (arr.reduce((a, b) => a.length > b.length ? a : b)).length
-                arr = arr.map(x => x.slice(0,-1) + " ".repeat(longest - x.length) + '"')
+                arr = arr.map(x => x.slice(0, -1) + " ".repeat(longest - x.length) + '"')
                 rest[3] = arr.join(",")
                 userArrays[rest[1]] = longest - 1 // minus 2 quotes + null
+                userArrayLengths[rest[1]] = arr.length
                 // arr.forEach(x => {
                 //     userArrays[rest[1]].push(x.length - 1) //save each items length - brackets + the null char
                 // })
-            } else if(rest[0] == "int") {
+            } else if (rest[0] == "int") {
                 userArrays[rest[1]] = 4
+                userArrayLengths[rest[1]] = rest.slice(3).length
                 rest[3] = rest.slice(3).join(",")
                 // rest.slice(3).forEach(x => {
                 //     userArrays[rest[1]].push(4) //.long numbers have 4 bytes
                 // })
             }
-            
+
             //console.log("!!!!!", userArrays)
         }
         //console.log(`${rest[1]}: ${typedefs[rest[0]]} ${rest[3]}`)
@@ -408,38 +501,40 @@ var data_section_data = []
 var main_kernel_data = []
 
 module.exports = function run(code) {
-    code = code.replace(new RegExp("\t","gm"), "")
+    code = code.replace(new RegExp("\t", "gm"), "")
     console.log(code)
     code = code.replace(/\s+(?=(?:(?:[^"]*"){2})*[^"]*"[^"]*$)/gm, "_") //add underscores in quotes
-    
+
     code = code.split('\n').filter(x => x).map(x => {
         return x.split(/[\s,\(\)]+/) //split by: comma, space, parenthesis
     }).map(x => x.filter(n => n))
-    
-    for(yPos = 0; yPos < code.length; yPos++) {
+
+    for (yPos = 0; yPos < code.length; yPos++) { //for each line
         var y = code[yPos]
-        for(xPos = 0; xPos < y.length; xPos++) {
+        for (xPos = 0; xPos < y.length; xPos++) { //for each word
             var x = y[xPos]
-            
-            
+            //code[yPos][xPos] = code[yPos][xPos].replace(/\_/gm, " ")
+
             if (x[0] == '"' && y[0] != "type") { // if the first letter is " and im not defining a variable
                 var randString = randomStringName() // turn in-place strings into SIP references
                 data_section_data.push(`${randString}: .asciz ${x}`)
                 code[yPos][xPos] = randString
+                userArrays[randString] = x.slice(1, -1)
             }
-            if(x.at(-1) == "]") {
-                var ret = [`arrayIndex`, x.slice(0,x.indexOf("[")),x.slice(x.indexOf("[")+1,-1)]
+            if (x.at(-1) == "]") {
+                var ret = [`arrayIndex`, x.slice(0, x.indexOf("[")), x.slice(x.indexOf("[") + 1, -1)]
                 code[yPos][xPos] = ""
                 code[yPos].splice(xPos, 0, ...ret);
                 console.log("REPL", code[yPos])
             }
+
 
             //code[yPos][xPos] = x.replace(/_/gm, " ") //redo the spaces
         }
     }
 
     console.log("PARSED OUT___", code)
-    
+
     /*
     
     */
@@ -456,8 +551,12 @@ module.exports = function run(code) {
             //console.log(lineContents)
         }
         lineContents = lineContents.filter(_Wrd => _Wrd)
+        if (lineContents.filter(x => x == "arrayIndex").length == 2) {
+            twoIndexReferences = true
+        } else {
+            twoIndexReferences = false
+        }
         for (wordNumber = lineContents.length - 1; wordNumber >= 0; wordNumber--) {
-            
             var wordContents = lineContents[wordNumber]
             if (wordContents[0] == "*") { //IF POINTER
                 lineContents[wordNumber] = `[${wordContents.slice(1)}]`
@@ -482,5 +581,5 @@ module.exports = function run(code) {
     }
     //console.log("---",code,"---")
     fs.writeFileSync('kernel.s', outConts.header + data_section_data.join("\n") + outConts.middle + main_kernel_data.join("\n") + outConts.footer)
-    if(process.argv[3] != "debug") shellExec()
+    if (process.argv[3] != "debug") shellExec()
 }

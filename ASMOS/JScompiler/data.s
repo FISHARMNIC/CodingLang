@@ -25,19 +25,21 @@ _vga_entry:
 .endm
 
 .macro inc_var addr
-    push %ebx
-    mov %ebx, [\addr]
-    inc %ebx
-    mov \addr, %ebx
-    pop %ebx
+    # push %ebx
+    # mov %ebx, [\addr]
+    # inc %ebx
+    # mov \addr, %ebx
+    # pop %ebx
+    incw [\addr]
 .endm
 
 .macro dec_var addr
-    push %ebx
-    mov %ebx, [\addr]
-    inc %ebx
-    mov \addr, %ebx
-    pop %edx
+    # push %ebx
+    # mov %ebx, [\addr]
+    # inc %ebx
+    # mov \addr, %ebx
+    # pop %edx
+    decw [\addr]
 .endm
 
 .macro add_var addr, value
@@ -84,8 +86,27 @@ _vga_entry:
     pop %eax
 .endm
 
+
+_remainder:
+    cmp %eax, %edx
+    jge _NLL1
+    jmp _NLL2
+    _NLL1:
+        sub %eax, %edx
+        cmp %eax, %edx
+        jge _NLL1
+    _NLL2:
+    ret
+
 .macro new_line
-    add_var _lineNumber, 80
+    # NEWLINE = position  + (80 - (position % 80))
+    mov %eax, [_lineNumber] # number
+    mov %edx, 80 # divisor
+    call _remainder # eax = linePos % 80
+    sub %edx, %eax # 80 - remainder
+    add %edx, [_lineNumber] # edx = linePos + (80 - remainder)
+    mov _lineNumber, %edx # new line position
+
 .endm
 
 .macro put_char c, i = _lineNumber # character, index
@@ -94,6 +115,7 @@ _vga_entry:
     mov %ebx, \i # prepare the index register
     call _vga_entry # call the display
     popa
+    inc_var _lineNumber
 .endm
 
 put_string_start:  

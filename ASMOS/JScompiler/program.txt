@@ -1,17 +1,21 @@
-type string myStrings = "hello", "how", "are", "you"
-type int myNumbers = 1, 2, 3, 4
-
-printLine(%i, myNumbers[0])
-printLine(%i, myNumbers[3])
-
+type int destination = 1,2,3,4
+type int source = 4,3,2,1
 
 type int readIndex = 0
-label loopStart
-    printLine(%s, myStrings[readIndex])
-    ++ readIndex
-    if(*readIndex < 4)
-        jump(loopStart)
-    endif
+while(readIndex < arrayLength(destination)) 
+    printf(%s, "COPYING: ")
+    printf(%i, source[readIndex])
+    printf(%s "INTO: ")
+    printf(%i, destination[readIndex])
 
-setStringUnsafe(myStrings[2], "Adios") //not_working
-printLine(%s, myStrings[2])
+    intcpy(destination[readIndex], source[readIndex])
+
+    printf(%s, "RESULT AT ADDRESS: ")
+    printf(%i, destination[readIndex])
+
+    printNewLine()
+
+    ++ readIndex
+endWhile
+
+printLine(%s, "--done--")

@@ -4,36 +4,50 @@
 .global kernel_entry
 
 _lineNumber: .long 0
-S4486: .asciz "Adios"
-myStrings: .asciz "hello","how  ","are  ","you  "
-myNumbers: .long 1,2,3,4
+S2300: .asciz "COPYING:_"
+S0565: .asciz "INTO:_"
+S1484: .asciz "RESULT_AT_ADDRESS:_"
+S9458: .asciz "--done--"
+destination: .long 1,2,3,4
+source: .long 4,3,2,1
 readIndex: .long 0
-S1833: .asciz "S4486"
+S0134: .long 0
 .include "./data.s"
 
 .section .text
 kernel_entry:
-put_int myNumbers
-new_line
-put_int myNumbers+12
-new_line
-loopStart:
+FOR0:
+put_string S2300
 mov %eax, [readIndex]
-mov %ebx, 6
+mov %ebx, 4
 mul %ebx
-put_string [myStrings + %eax]
+put_int [source + %eax]
+put_string S0565
+mov %eax, [readIndex]
+mov %ebx, 4
+mul %ebx
+put_int [destination + %eax]
+mov %eax, [readIndex]
+mov %ebx, 4
+mul %ebx
+push %eax # stores result in stack
+mov %eax, [readIndex]
+mov %ebx, 4
+mul %ebx # stores result in eax
+pop %edx
+mov %cx, 4 
+lea %esi, [source + %edx]      # offset new string into SI
+lea %edi, [destination + %eax]   # offset destination string into DI
+rep movsb
+put_string S1484
+mov %eax, [readIndex]
+mov %ebx, 4
+mul %ebx
+put_int [destination + %eax]
 new_line
 inc_var readIndex
 cmpb [readIndex], 4
-jl AUTO0
-jmp AUTO1
-AUTO0:
-jmp loopStart
-AUTO1:
-mov %cx, 3   # how many bytes to copy (numeric value)
-lea %si, [S1833]      # offset new string into SI
-lea %di, [myStrings+12]   # offset destination string into DI
-rep movsb
-put_string myStrings+12
+jl FOR0 
 new_line
+put_string S9458
    ret

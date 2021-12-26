@@ -52,13 +52,13 @@ printLine(%c, *myChar)
 setVar(myChar, 'C')
 printLine(%c, *myChar)
 
-newLine
+printNewLine()
 
 printLine(%i, *myInt)
 setVar(myInt, 4567)
 printLine(%i, *myInt)
 
-newLine
+printNewLine()
 
 printLine(%s, *myString)
 setString(myString, "Adios_Mundo")
@@ -88,4 +88,59 @@ addVar(x,9)
 printLine(%i, x)
 mulVar(x,5)
 printLine(%i, x)
+//-----------
+
+//--------ARRAYS-------
+type string myStrings = "hello", "how", "are", "you"
+type int myNumbers = 1, 2, 3, 4
+
+printLine(%i, myNumbers[0])
+printLine(%i, myNumbers[3])
+
+
+type int readIndex = 0
+label loopStart
+    printLine(%s, myStrings[readIndex])
+    ++ readIndex
+    if(*readIndex < 4)
+        jump(loopStart)
+    endif
+
+strcpy(myStrings[2], "Adios")
+printLine(%s, myStrings[2])
+//--------
+
+
+//-------While Loops-------
+type string shoppingList = "apple", "pear", "oranges", "grapes"
+
+type int i = 0
+while(i < arrayLength(shoppingList))
+    printLine(%s, shoppingList[i])
+    ++ i
+endWhile
+//----------
+
+//-------More complex array read + write and better print functions-----
+type string destination = "hello", "welcome", "bonjour", "whats up"
+type string source = "adios", "bye", "goodbye", "later"
+
+type int readIndex = 0
+while(readIndex < arrayLength(destination)) 
+    printf(%s, "COPYING: ")
+    printf(%s, source[readIndex])
+    printf(%s "INTO: ")
+    printf(%s, destination[readIndex])
+
+    strcpy(destination[readIndex], source[readIndex])
+
+    printf(%s, "RESULT AT ADDRESS: ")
+    printf(%s, destination[readIndex])
+
+    printNewLine()
+
+    ++ readIndex
+endWhile
+
+printLine(%s, "--done--")
 //-----------
