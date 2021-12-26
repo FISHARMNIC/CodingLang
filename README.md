@@ -30,3 +30,8 @@ QEMU should pop up and present you with the grub bootloader. From there, click e
 
 ### How do I Write my Own Code?
 The file `program.txt` in the folder `JScompiler` holds your code. When executing, the last parameter (the file) can be changed to whatever file you want. Go ahead and check out `example_programs.txt` in the `JScompiler` folder to see some samples!
+
+### Documentation
+---
+#### Variables
+There are two types of variables, integers and strings. When declaring a variable, simply type 
