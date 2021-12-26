@@ -50,7 +50,7 @@ ex.
 The size of each itme of a string array is set to that of the longest. That means that:   
 `type string strarr = "a", "bc", "def", "efgh"`  
 Will created as
-`type string strarr = "a   ", "bc  ", "def ", "efgh"`  
+`type string strarr = "a___", "bc__", "def_", "efgh"` (with the underscores as spaces)
 
 ### Reading
 When accessing arrays, one places square brackets directly after the name of the array. In these brackets, can be put other variables, and constant, but **not functions/equations**. 
@@ -69,6 +69,19 @@ See strcpy/intcpy
 
 ## Variable re-definition/editing
 ---
+
+### ++ \<name> and -- \<name>
+Important note: a space must be present between the function and its name (`++ bob` works but not `++bob`)
+
+Increment and decrement a variable
+
+## mulVar(\<name>,\<number>)
+Multiplies a variable with a **constant** and sets the first variable to the result
+
+## mulVars(\<name,\<other name>)
+
+Multiplies a variable with another **variable** and sets the first variable to the result
+
 ### setVar(\<name>, \<value>)
 This function is used for setting **characters and integers** only.  
 
@@ -107,4 +120,42 @@ Allowed:
 Not Allowed:  
 	* `strcpy(myStrings[1], myStrings2[2])` < note how "chicken" is longer than "how"  
 	* `strcpy(myStrings[myIndex], myStrings[myIndex + 10])` < note how there is an equation  
+	
+
+## Control Flow
+---
+For later...  
+
+Basic documentation  
+
+note: use pointers (\*) when comparing variables  
+
+`if(this operator that)` 
+	...  
+`else` < optional  
+	...  
+`endif`  
+
+---
+
+`extif(this operator that &&/|| this operator that)`  
+... same as above
+
+---
+
+`while(var operator number)`  
+	...  
+`endWhile`  
+
+## STDOUT
+
+Basic documentation  
+
+% options: %s, %i, %c ; string, int, char  
+
+printf(%format, value)  
+printLine(%format, value)  
+
+ex.  
+printLine(%s, myStrArr\[3])  
 
