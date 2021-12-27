@@ -2,6 +2,12 @@ BLACK = 0 # vga color for black
 WHITE = 15 # vga color for white
 VGA_ADDR = 0xB8000
 
+KEYBOARD_PORT = 0x60
+KEY_LEFT = 0x4B
+KEY_RIGHT = 0x4D
+KEY_UP = 0x48
+KEY_DOWN  =0x50
+
 # IN USE : EBX, ECX
 # ECX : CHARACTER REGISTER
 # EBX : INDEX REGISTER
@@ -19,6 +25,8 @@ _vga_entry:
     ret
 
 .section .data
+
+keyboard_out: .byte 0
 
 .macro set_var addr, value
     movw \addr, \value
@@ -218,3 +226,24 @@ put_int_loop_start:
     call put_int_loop_start # put each digit into the stack 
     # popa
 .endm
+
+read_keyboard:
+    push %eax
+    push %ebx
+
+    mov %ebx, 0
+
+    read_keyboard_loop_start:
+    inb %al, KEYBOARD_PORT # store keycode in al
+    inc %ebx
+    cmp %al, 0
+    jne read_keyboard_loop_exit # found a key pressed, so return it
+    # otherwise, check for a timeout
+    cmp %ebx, 77 # there are 77 keys 
+    jne read_keyboard_loop_start # as long as i havent timed out, keep checking
+    read_keyboard_loop_exit:
+    movb keyboard_out, %al # save the resulting keycode
+    pop %ebx
+    pop %eax
+    ret
+    

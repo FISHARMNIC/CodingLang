@@ -32,10 +32,35 @@ macro printAtPos(xP,yP) {
 -------------------------------------------------------
 # MAIN_RENDER_LOOP
 while(renderedFrames > -1) 
-    # ALWAYS_TRUE
+    getKeyboardInput()
+
+    if (*keyboard_out == KEY_UP)
+        setVar(snakeDirectionX, 0)
+        setVar(snakeDirectionY, -1)
+    endif
+
+    if (*keyboard_out == KEY_DOWN)
+        setVar(snakeDirectionX, 0)
+        setVar(snakeDirectionY, 1)
+    endif
+
+    if (*keyboard_out == KEY_LEFT)
+        setVar(snakeDirectionX, -1)
+        setVar(snakeDirectionY, 0)
+    endif
+
+    if (*keyboard_out == KEY_RIGHT)
+        setVar(snakeDirectionX, 1)
+        setVar(snakeDirectionY, 0)
+    endif
+
+
+
     clearScreen
     call renderAndStep
-    sleep(67108863)
+
+    # Wait 
+    sleep(0.5)
 endWhile
 -------------------------------------------------------
 

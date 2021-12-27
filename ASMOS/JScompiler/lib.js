@@ -148,6 +148,7 @@ var definedFuncs = {
         main_kernel_data.push(`${name}:`)
     },
     if: function (value1, comparer, value2) {
+        incPseudoLabel()
         var comparebyte = "cmp"
         if ((value1[0] == "[" && value1.at(-1) == "]") || (value2[0] == "[" && value2.at(-1) == "]")) {
             comparebyte = "cmpb"
@@ -436,6 +437,7 @@ var definedFuncs = {
         //process.exit(0)
     },
     sleep(amount) {
+        amount = Math.round(amount * 2 * 67108863)
         var label = randomStringName()
         main_kernel_data.push(
             `push %eax`,
@@ -450,6 +452,10 @@ var definedFuncs = {
     },
     clearScreen: function() {
         main_kernel_data.push('call _clearVGA')
+    },
+    getKeyboardInput: function() {
+        main_kernel_data.push(`call read_keyboard`)
+        lineContents[wordNumber] = 'keyboard_out'
     }
 
 }

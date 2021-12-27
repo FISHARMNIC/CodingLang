@@ -5,7 +5,7 @@
 
 _lineNumber: .long 0
 _mathResult: .long 0
-S1270: .asciz "done"
+S9903: .asciz "done"
 snakeMaxLength: .long 9
 snakeXPositions: .long 40,-1,-1,-1,-1,-1,-1,-1,-1,-1
 snakeYPositions: .long 12,-1,-1,-1,-1,-1,-1,-1,-1,-1
@@ -43,16 +43,45 @@ put_char 219, _mathResult
 .endm
 # MAIN_RENDER_LOOP
 FOR0:
-# ALWAYS_TRUE
+call read_keyboard
+cmpb [keyboard_out], KEY_UP
+je _AUTO1
+jmp _AUTO2
+_AUTO1:
+set_var snakeDirectionX, 0
+set_var snakeDirectionY, -1
+_AUTO2:
+cmpb [keyboard_out], KEY_DOWN
+je _AUTO3
+jmp _AUTO4
+_AUTO3:
+set_var snakeDirectionX, 0
+set_var snakeDirectionY, 1
+_AUTO4:
+cmpb [keyboard_out], KEY_LEFT
+je _AUTO5
+jmp _AUTO6
+_AUTO5:
+set_var snakeDirectionX, -1
+set_var snakeDirectionY, 0
+_AUTO6:
+cmpb [keyboard_out], KEY_RIGHT
+je _AUTO7
+jmp _AUTO8
+_AUTO7:
+set_var snakeDirectionX, 1
+set_var snakeDirectionY, 0
+_AUTO8:
 call _clearVGA
 call renderAndStep
+# Wait
 push %eax
 mov %eax, 67108863
-S7351:
+S4510:
 nop
 sub %eax, 1
 cmp %eax, 0
-jge S7351
+jge S4510
 pop %eax
 cmpb [renderedFrames], -1
 jg FOR0 
@@ -65,9 +94,9 @@ mov %eax, [cellAtIteration]
 mov %ebx, 4
 mul %ebx
 cmpb [snakeXPositions + %eax], -1
-jne _AUTO0
-jmp _AUTO1
-_AUTO0:
+jne _AUTO9
+jmp _AUTO10
+_AUTO9:
 mov %eax, [cellAtIteration]
 mov %ebx, 4
 mul %ebx
@@ -102,12 +131,12 @@ mov %cx, 1
 lea %esi, currentSnakeCellY      # offset new string into SI
 lea %edi, [snakeYPositions + %eax]   # offset destination string into DI
 rep movsb
-_AUTO1:
+_AUTO10:
 inc_var cellAtIteration
 cmpb [cellAtIteration], 9
 jl FOR1 
 new_line
-put_string S1270
+put_string S9903
 ret
 finish:
    ret
