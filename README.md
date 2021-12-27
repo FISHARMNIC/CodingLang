@@ -161,3 +161,16 @@ printLine(%format, value)
 ex.  
 printLine(%s, myStrArr\[3])  
 
+## STDIN
+
+Basic documentation
+
+example.
+```getKeyboardInput()
+if (*keyboard_out == KEY_UP)
+...
+endif
+```
+
+only the arrow keys have been implemented so far
+
