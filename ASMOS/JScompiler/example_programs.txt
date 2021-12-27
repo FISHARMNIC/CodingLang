@@ -180,24 +180,128 @@ printLine(%s, "done!")
 printLine(%s, "Program By: Nicolas Quijano - 2021")
 //---------------------
 
+//-----COMPLEX LONG PROGRAM SNAKE GAME------
+# MAX_LENGTH_(NOT_INCLUDING_THE_HEAD)
+const int snakeMaxLength = 9
+type int snakeCurrentLength = 1
+type int temporary = 0
 
-type int snakeMaxLength = 10
-type int snakeXPositions = 40, newFilledArray(int, -1, snakeMaxLength)
-type int snakeYPositions = 12, newFilledArray(int, -1, snakeMaxLength)
+# EACH_CELL_CONTAINS_A_POSSIBLE_STATE_FOR_THAT_SECTION_OF_THE_SNAKE 
+type int snakeXPositions = 40, newFilledArray(int, -1, $snakeMaxLength)
+type int snakeYPositions = 12, newFilledArray(int, -1, $snakeMaxLength)
 
-type int renderCounter = 0
+# EACH_CELL_CONTAINS_HOW_LONG_THE_CELL_WILL_STAY_PRESENT_AT_THAT_SECTION
+# THE_FIRST_CELL/HEAD_WILL_ALWAYS_STAY_PRESENT
+type int snakeDuration = newFilledArray(int, 0, $snakeMaxLength)
 
+# X_MOVEMENT_:_Y_MOVEMENT
+type int snakeDirectionX = 1
+type int snakeDirectionY = 0
+
+# USED_FOR_LOOPING_THE_RENDER 
+type int cellAtIteration = 0
+type int currentSnakeCellX = 0
+type int currentSnakeCellY = 0
+
+# NUMBER_OF_FRAMES_RENDERED
+type int renderedFrames = 0
+
+type int incrementIndex = 0
+
+# PRINT_INDIVIDUAL_PIXEL
 macro printAtPos(xP,yP) {
     evaluate(yP x 80 + xP)
     printAddr(%c, 219, _mathResult)
 }
 
-function drawSnake {
-    setVar(renderCounter, 0)
-    while(renderCounter < 10) {
-
-    }
+macro printHeadAtPos(xP,yP) {
+    evaluate(yP x 80 + xP)
+    printAddr(%c, 002, _mathResult)
 }
 
-printAtPos(0, 0)
-printAtPos(79, 1)
+-------------------------------------------------------
+# MAIN_RENDER_LOOP
+while(renderedFrames > -1) 
+    getKeyboardInput()
+
+    if (*keyboard_out == KEY_UP)
+        setVar(snakeDirectionX, 0)
+        setVar(snakeDirectionY, -1)
+    endif
+
+    if (*keyboard_out == KEY_DOWN)
+        setVar(snakeDirectionX, 0)
+        setVar(snakeDirectionY, 1)
+    endif
+
+    if (*keyboard_out == KEY_LEFT)
+        setVar(snakeDirectionX, -1)
+        setVar(snakeDirectionY, 0)
+    endif
+
+    if (*keyboard_out == KEY_RIGHT)
+        setVar(snakeDirectionX, 1)
+        setVar(snakeDirectionY, 0)
+    endif
+
+
+
+    clearScreen
+    call renderAndStep
+
+    # Wait 
+    sleep(0.5)
+endWhile
+-------------------------------------------------------
+
+jump finish
+
+# RENDER_FUNCTION:_EACH_CELL_IS_CHECKED_AND_DRAWN_IF_PRESENT
+function renderAndStep {
+
+    setVar(cellAtIteration, 0)
+
+    # EDIT_POSITION_OF_HEAD
+    intcpy(currentSnakeCellX, snakeXPositions[cellAtIteration]) 
+    intcpy(currentSnakeCellY, snakeYPositions[cellAtIteration])
+    addVars(currentSnakeCellX, snakeDirectionX)
+    addVars(currentSnakeCellY, snakeDirectionY)
+    intcpy(snakeXPositions[cellAtIteration], currentSnakeCellX)
+    intcpy(snakeYPositions[cellAtIteration], currentSnakeCellY)
+
+    printHeadAtPos(currentSnakeCellX, currentSnakeCellY)
+
+    setVar(cellAtIteration, 1)
+    while(cellAtIteration < $snakeMaxLength)
+        if(snakeXPositions[cellAtIteration] != -1)
+            intcpy(currentSnakeCellX, snakeXPositions[cellAtIteration])
+            intcpy(currentSnakeCellY, snakeYPositions[cellAtIteration])
+
+            # RENDER_CURRENT_CELL
+            printAtPos(currentSnakeCellX, currentSnakeCellY)
+
+            printAddr(%i, cellAtIteration, 400)
+        endif
+        ++ cellAtIteration
+    endWhile
+    
+    if(*snakeCurrentLength < $snakeMaxLength)
+        intcpy(snakeXPositions[snakeCurrentLength], snakeXPositions[0])
+        intcpy(snakeYPositions[snakeCurrentLength], snakeYPositions[0])
+        intcpy(snakeDuration[snakeCurrentLength], snakeCurrentLength)
+        ++ snakeCurrentLength
+    else 
+        setVar(snakeCurrentLength, 1)
+    endif
+    
+
+    printAddr(%i, snakeXPositions[0], 0)
+    printAddr(%i, snakeYPositions[0], 80)
+    printAddr(%i, snakeXPositions[1], 160)
+    printAddr(%i, snakeYPositions[1], 240)
+    printAddr(%i, snakeCurrentLength, 320)
+    
+}
+
+label finish
+//----------SNAKE GAME ENDS HERE
