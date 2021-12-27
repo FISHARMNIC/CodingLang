@@ -2,6 +2,7 @@
 
 const fs = require('fs')
 const { exec } = require("child_process");
+const { parse } = require('path/posix');
 
 /* 
 Note:
@@ -59,6 +60,7 @@ kernel_entry:
 }
 
 var shellExec = function () {
+    console.log("running")
     exec("./shellExec.sh", (error, stdout, stderr) => {
         if (error) {
             console.log(`error: ${error.message}`);
@@ -91,6 +93,9 @@ var userArrayLengths = {}
 var arrayIndexUseEax = false //use edx first so that the accum can be used later
 var twoIndexReferences = false
 var lineCorrectionLabelCounter = 0
+var compileTimeConstants = {}
+var didPushEAX = false
+
 
 function pseudoLabel(next) {
     if (next == "next") {
@@ -106,7 +111,7 @@ function incPseudoLabel() {
 }
 
 function tError(m) {
-    console.log(`Error at line ${line + 1}: ${m}`)
+    //console.log(`Error at line ${line + 1}: ${m}`)
     process.exit(1)
 }
 
@@ -146,16 +151,28 @@ var definedFuncs = {
         main_kernel_data.push(`${name}:`)
     },
     if: function (value1, comparer, value2) {
+        incPseudoLabel()
         var comparebyte = "cmp"
         if ((value1[0] == "[" && value1.at(-1) == "]") || (value2[0] == "[" && value2.at(-1) == "]")) {
             comparebyte = "cmpb"
+        } if ((value1[0] == "[" && value1.at(-1) == "]") && (value2[0] == "[" && value2.at(-1) == "]")) {
+            main_kernel_data.push(
+                `push %eax`,
+                `mov %eax, ${value2}`,
+                `cmp ${value1}, %eax`,
+                `pop %eax`,
+                `${compares[comparer]} ${pseudoLabel()}`, //jump to pseudo label if condition is met
+                `jmp ${pseudoLabel("next")}`, //otherwise jump to the next one
+                `${pseudoLabel()}:` //create the label
+            )
+        } else {
+            main_kernel_data.push(
+                `${comparebyte} ${value1}, ${value2}`,
+                `${compares[comparer]} ${pseudoLabel()}`, //jump to pseudo label if condition is met
+                `jmp ${pseudoLabel("next")}`, //otherwise jump to the next one
+                `${pseudoLabel()}:` //create the label
+            )
         }
-        main_kernel_data.push(
-            `${comparebyte} ${value1}, ${value2}`,
-            `${compares[comparer]} ${pseudoLabel()}`, //jump to pseudo label if condition is met
-            `jmp ${pseudoLabel("next")}`, //otherwise jump to the next one
-            `${pseudoLabel()}:` //create the label
-        )
     },
     extif: function (value1a, comparer1, value2a, type, value1b, comparer2, value2b) {
         var comparebyte = "cmp"
@@ -221,7 +238,7 @@ var definedFuncs = {
         )
     },
     setString: function (addr, newString) {
-        console.log("SETTING", addr, newString)
+        //console.log("SETTING", addr, newString)
         if (newString[0] == '"' || newString[0] == "'") {
             newString = newString.slice(1, -1) // remove extra quotes
         }
@@ -231,7 +248,7 @@ var definedFuncs = {
         if (newString.length > userStrings[addr].length) {
             tError(`New String "${newString}" is longer than "${userStrings[addr]}"`)
         }
-        //console.log(userStrings)
+        ////console.log(userStrings)
         newString.split("").forEach((x, ind) => { //for each char
             main_kernel_data.push(
                 `set_var ${addr} + ${ind}, '${x}'` // memory[stringStart + offset] = newString[offset]
@@ -240,13 +257,13 @@ var definedFuncs = {
     },
     setStringUnsafe: function (addr, newString) {
 
-
         //-------------DIFFERENT_LENGTH_ARRAYS_DONT_WORK-----------
         //var randString = randomStringName()
-        //console.log("new unsafe", randString, newString)
+        ////console.log("new unsafe", randString, newString)
         //definedSpecials.type(["string", randString, "=", `"${newString}"`])
-        //console.log(userArrays, newString, newString.slice(0,newString.indexOf("+")))
+        ////console.log(userArrays, newString, newString.slice(0,newString.indexOf("+")))
         var parsed;
+        console.log("NAWS", newString)
         if (newString.includes("+")) {
 
             if (newString.includes("[")) {
@@ -257,19 +274,31 @@ var definedFuncs = {
         } else {
             parsed = newString
         }
-        console.log(userArrays, newString, parsed)
+        //console.log(userArrays, newString, parsed, userArrays[parsed])
         //process.exit(0)
         if (twoIndexReferences) {
+            if (didPushEAX) {
+                main_kernel_data.push(
+                    `pop %edx` //restore edx from the stack
+                )
+                didPushEAX = false
+            }
+        }
+        if (userArrays[parsed]) {
             main_kernel_data.push(
-                `pop %edx` //restore edx from the stack
+                `mov %cx, ${userArrays[parsed].length != undefined ? userArrays[newString].length : userArrays[parsed]} `, //${newString.length}   # how many bytes to copy (numeric value)`,
+                `lea %esi, ${newString}      # offset new string into SI`,
+                `lea %edi, ${addr}   # offset destination string into DI`,
+                `rep movsb`
+            )
+        } else {
+            main_kernel_data.push(
+                `mov %cx, [${parsed}] `, //${newString.length}   # how many bytes to copy (numeric value)`,
+                `lea %esi, ${newString}      # offset new string into SI`,
+                `lea %edi, ${addr}   # offset destination string into DI`,
+                `rep movsb`
             )
         }
-        main_kernel_data.push(
-            `mov %cx, ${userArrays[parsed].length != undefined ? userArrays[newString].length : userArrays[parsed]} `, //${newString.length}   # how many bytes to copy (numeric value)`,
-            `lea %esi, ${newString}      # offset new string into SI`,
-            `lea %edi, ${addr}   # offset destination string into DI`,
-            `rep movsb`
-        )
 
 
     },
@@ -309,7 +338,7 @@ var definedFuncs = {
         //lineContents[wordNumber] = "[" + randString + "]"
         lineContents[wordNumber] = randString
         userArrays[randString] = string
-        //console.log(string)
+        ////console.log(string)
         //process.exit(0)
     },
     mathResult: function () {
@@ -328,6 +357,9 @@ var definedFuncs = {
     addVar: function (v, val) {
         main_kernel_data.push(`add_var ${v}, ${val}`)
     },
+    addVars: function (v, val) {
+        main_kernel_data.push(`add_vars ${v}, ${val}`)
+    },
     subVar: function (v, val) {
         main_kernel_data.push(`sub_var ${v}, ${val}`)
     },
@@ -338,53 +370,53 @@ var definedFuncs = {
         main_kernel_data.push(`mul_vars ${v}, ${val}`)
     },
     arrayIndex: function (array, index) {
-        console.log("!!!!", array, index)
+        console.log("!!!!", array, index, parseInt(index))
         //console.log(twoIndexReferences)
         //process.exit(0)
-        if (String(index) == "0") {
-            lineContents[wordNumber] = array
-            //lineContents.splice(wordNumber + 1,1)
-        } else if (!parseInt(index)) { //if a variable
+        if (isNaN(parseInt(index))) { //if a variable
+            console.log("@@@ RUNNIN")
             if (twoIndexReferences) { //if there are two items asing to be indexed
-                console.log("yup", arrayIndexUseEax)
+                //console.log("yup", arrayIndexUseEax)
                 //process.exit(0)
                 if (!arrayIndexUseEax) {
                     var randString = randomStringName()
                     definedSpecials.type(["int", randString, "=", `0`])
 
+                    //console.log(parseInt(index), parseInt(index) != undefined ? index : `[${index}]`)
                     main_kernel_data.push(
-                        `mov %eax, [${index}]`,
+                        `mov %eax, ${!isNaN(parseInt(index)) ? index : `[${index}]`} #T1`,
                         `mov %ebx, ${userArrays[array]}`,
                         `mul %ebx`,
                         `push %eax # stores result in stack`,
                     )
+                    didPushEAX = true
                     //sthis.setVar(randString, `[${array} + %edx]`)
                     lineContents[wordNumber] = `[${array} + %edx]`
                     //lineContents[wordNumber] = `${array} + [${randString}]`
                 } else {
                     main_kernel_data.push(
-                        `mov %eax, [${index}]`,
+                        `mov %eax, ${!isNaN(parseInt(index)) ? index : `[${index}]`}`,
                         `mov %ebx, ${userArrays[array]}`,
                         `mul %ebx # stores result in eax`,
                     )
+                    console.log("type2")
                     lineContents[wordNumber] = `[${array} + %eax]`
                 }
                 arrayIndexUseEax = !arrayIndexUseEax
             } else {
                 main_kernel_data.push(
-                    //`push %eax`,
-                    //`push %ebx`,
-                    `mov %eax, [${index}]`,
+                    `mov %eax, ${!isNaN(parseInt(index)) ? index : `[${index}]`}`,
                     `mov %ebx, ${userArrays[array]}`,
                     `mul %ebx`,
                 )
+                console.log("type1")
                 lineContents[wordNumber] = `[${array} + %eax]`
             }
 
         } else {
             //lineContents[wordNumber] = array + "+" + userArrays[array].slice(0, index).reduce((p, c) => p + c) // add all of the item's lengths up to the desired index to get to the starting position
             lineContents[wordNumber] = array + "+" + (userArrays[array] * index)
-            //console.log(array + "+" + (userArrays[array]*index))
+            ////console.log(array + "+" + (userArrays[array]*index))
         }
         lineContents.splice(wordNumber + 1, 1)
         lineContents.splice(wordNumber + 1, 1)
@@ -398,7 +430,7 @@ var definedFuncs = {
         )
     },
     endWhile: function () {
-        console.log(forLoop)
+        //console.log(forLoop)
         main_kernel_data.push(
             `cmpb [${forLoop.link}], ${forLoop.endValue}`,
             `${compares[forLoop.controller]} FOR${forlblCounter} `
@@ -407,12 +439,51 @@ var definedFuncs = {
     },
     arrayLength: function (array) {
         lineContents[wordNumber] = userArrayLengths[array]
-        lineContents.splice(wordNumber + 1,1)
+        lineContents.splice(wordNumber + 1, 1)
+    },
+    newFilledArray: function (type, value, length) {
+        length = parseInt(length)
+        if (type == "string") {
+            lineContents.splice(wordNumber, 4, ...(`"${value}",`.repeat(length).slice(0, -1).split(",")))
+        } else if (type == "int") {
+            lineContents.splice(wordNumber, 4, ...((`${value},`).repeat(length).slice(0, -1).split(",")))
+        } else {
+            lineContents.splice(wordNumber, 4, ...((`'${value}',`).repeat(length).slice(0, -1).split(",")))
+        }
+        ////console.log(type, value, length)
+        //process.exit(0)
+    },
+    sleep(amount) {
+        amount = Math.round(amount * 2 * 67108863)
+        var label = randomStringName()
+        main_kernel_data.push(
+            `push %eax`,
+            `mov %eax, ${amount}`,
+            `${label}:`,
+            `nop`,
+            `sub %eax, 1`,
+            `cmp %eax, 0`,
+            `jge ${label}`,
+            `pop %eax`
+        )
+    },
+    clearScreen: function () {
+        main_kernel_data.push('call _clearVGA')
+    },
+    getKeyboardInput: function () {
+        main_kernel_data.push(`call read_keyboard`)
+        lineContents[wordNumber] = 'keyboard_out'
     }
 
 }
 
 var definedSpecials = {
+    "const": function (rest) {
+        compileTimeConstants[rest[1]] = rest[3]
+        ////console.log(compileTimeConstants)
+        //process.exit(0)
+        this.type([rest[0], rest[1], "=", rest[3]])
+    },
     type: function (rest) {
         if (rest[0] == "string") {
             var temp = rest[3]
@@ -420,6 +491,9 @@ var definedSpecials = {
                 temp = rest[3].slice(1, -1)
             }
             userStrings[rest[1]] = temp
+            userArrays[rest[1]] = temp
+        } else if (!(rest.slice(3).length > 1)) { //not arry but is int
+            userArrays[rest[1]] = rest[3]
         }
 
         if (rest.slice(3).length > 1) { //if array
@@ -443,9 +517,9 @@ var definedSpecials = {
                 // })
             }
 
-            //console.log("!!!!!", userArrays)
+            ////console.log("!!!!!", userArrays)
         }
-        //console.log(`${rest[1]}: ${typedefs[rest[0]]} ${rest[3]}`)
+        ////console.log(`${rest[1]}: ${typedefs[rest[0]]} ${rest[3]}`)
         //process.exit(0)
         data_section_data.push(`${rest[1]}: ${typedefs[rest[0]]} ${rest[3]}`)
     },
@@ -453,21 +527,22 @@ var definedSpecials = {
         inFunction = "macro"
         rest = rest.slice(0, -1) //remove the "{"
         macroParams = rest.slice()
-        //console.log("RESST", rest)
+        ////console.log("RESST", rest)
         main_kernel_data.push(`.macro ${rest[0]} ${rest.slice(1).join(",")}`)
         var ps = rest.slice(1).map((_, ind) => `V${ind}`)
         var eString = `
         definedFuncs[rest[0]] = function(${ps.join(",")}) {
             main_kernel_data.push("${rest[0]} " + Object.values(arguments).join(","))
         }`
-        //console.log(eString)
+        ////console.log(eString)
         eval(eString)
     },
     evaluate: function (code) {
 
-        main_kernel_data.push(`push %eax`,`mov %eax, ${parseInt(code[0]) ? code[0] : code[0].includes("[") ? code[0] : `[${code[0]}]`}`) // init in eax
 
-        console.log("#####", code, itemNum)
+        main_kernel_data.push(`push %eax`, `mov %eax, ${code[0]}`)// //${parseInt(code[0]) ? code[0] : code[0].includes("[") ? code[0] : `[${code[0]}]`}`) // init in eax
+
+        //console.log("#####", code, itemNum)
 
         for (var itemNum = 1; itemNum < code.length - 1; itemNum += 2) { //go by ops
             var item = {
@@ -498,13 +573,16 @@ var definedSpecials = {
                         ]
                 }
             })(item))
-            
+
         }
 
         main_kernel_data.push(`mov _mathResult, %eax`, `pop %eax`)
 
         lineContents[wordNumber] = '_mathResult'
-        
+        //console.log("------", main_kernel_data)
+    },
+    "#": function (rest) {
+        main_kernel_data.push(`# ${rest.join(" ")}`)
     }
 }
 
@@ -515,7 +593,7 @@ var main_kernel_data = []
 
 module.exports = function run(code) {
     code = code.replace(new RegExp("\t", "gm"), "")
-    console.log(code)
+    //console.log(code)
     code = code.replace(/\s+(?=(?:(?:[^"]*"){2})*[^"]*"[^"]*$)/gm, "_") //add underscores in quotes
 
     code = code.split('\n').filter(x => x).map(x => {
@@ -535,10 +613,12 @@ module.exports = function run(code) {
                 userArrays[randString] = x.slice(1, -1)
             }
             if (x.at(-1) == "]") {
+                console.log("ABC", x)
                 var ret = [`arrayIndex`, x.slice(0, x.indexOf("[")), x.slice(x.indexOf("[") + 1, -1)]
                 code[yPos][xPos] = ""
                 code[yPos].splice(xPos, 0, ...ret);
-                console.log("REPL", code[yPos])
+                console.log("OOO", code[yPos])
+                //console.log("REPL", code[yPos])
             }
 
 
@@ -546,7 +626,7 @@ module.exports = function run(code) {
         }
     }
 
-    console.log("PARSED OUT___", code)
+    //console.log("PARSED OUT___", code)
 
     /*
     
@@ -554,14 +634,14 @@ module.exports = function run(code) {
     for (line = 0; line < code.length; line++) {
         lineContents = code[line]
         if (inFunction == "macro") {
-            //console.log("HIIII")
+            ////console.log("HIIII")
             lineContents = lineContents.map(x => {
                 if (macroParams.includes(x)) {
                     return "\\" + x
                 }
                 return x
             })
-            //console.log(lineContents)
+            ////console.log(lineContents)
         }
         lineContents = lineContents.filter(_Wrd => _Wrd)
         if (lineContents.filter(x => x == "arrayIndex").length == 2) {
@@ -574,25 +654,33 @@ module.exports = function run(code) {
             if (wordContents[0] == "*") { //IF POINTER
                 lineContents[wordNumber] = `[${wordContents.slice(1)}]`
             }
+            if (wordContents[0] == "$") {
+                lineContents[wordNumber] = compileTimeConstants[wordContents.slice(1)]
+            }
 
-            //console.log("READING", wordContents, Object.keys(definedFuncs).includes(wordContents), lineContents )
+            ////console.log("READING", wordContents, Object.keys(definedFuncs).includes(wordContents), lineContents )
             if (Object.keys(definedFuncs).includes(wordContents)) { //IF FUNCTION
                 var argbuff = []
                 for (i = 1; i <= definedFuncs[wordContents].length; i++) { //iterate over how many arguments the function takes
                     argbuff.push(String(lineContents[wordNumber + i]))
                 }
                 definedFuncs[wordContents](...argbuff)
-                console.log(`CALLED ${wordContents}(${argbuff})`)
+                //console.log(`CALLED ${wordContents}(${argbuff})`)
             }
 
             if (Object.keys(definedSpecials).includes(wordContents)) { //IF SPECIAL
                 definedSpecials[wordContents](lineContents.slice(wordNumber + 1))
-                console.log(`${wordContents}([${lineContents.slice(wordNumber + 1)}])`)
+                //console.log(`${wordContents}([${lineContents.slice(wordNumber + 1)}])`)
             }
         }
-        console.log(lineContents)
+        //console.log(lineContents)
     }
-    //console.log("---",code,"---")
+    console.log("---exec---")
     fs.writeFileSync('kernel.s', outConts.header + data_section_data.join("\n") + outConts.middle + main_kernel_data.join("\n") + outConts.footer)
-    if (process.argv[3] != "debug") shellExec()
+    if (process.argv[3] != "debug") {
+        shellExec()
+    } else {
+        console.log("debug mode on")
+    }
+
 }

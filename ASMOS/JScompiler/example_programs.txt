@@ -179,3 +179,25 @@ endWhile
 printLine(%s, "done!")
 printLine(%s, "Program By: Nicolas Quijano - 2021")
 //---------------------
+
+
+type int snakeMaxLength = 10
+type int snakeXPositions = 40, newFilledArray(int, -1, snakeMaxLength)
+type int snakeYPositions = 12, newFilledArray(int, -1, snakeMaxLength)
+
+type int renderCounter = 0
+
+macro printAtPos(xP,yP) {
+    evaluate(yP x 80 + xP)
+    printAddr(%c, 219, _mathResult)
+}
+
+function drawSnake {
+    setVar(renderCounter, 0)
+    while(renderCounter < 10) {
+
+    }
+}
+
+printAtPos(0, 0)
+printAtPos(79, 1)
