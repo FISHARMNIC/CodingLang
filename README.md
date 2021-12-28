@@ -31,7 +31,7 @@ This program takes code that you write and compiles it into assembly language. T
 QEMU should pop up and present you with the grub bootloader. From there, click enter when you see the multiboot menu. When you're done, exit the program through the terminal (`ctrl + c`) or click the `x` on the QEMU window.
 
 ### How do I Write my Own Code?
-The file `program.txt` in the folder `JScompiler` holds your code. When executing, the last parameter (the file) can be changed to whatever file you want. Go ahead and check out `example_programs.txt` in the `JScompiler` folder to see some samples!
+The file `program.txt` in the folder `JScompiler` holds your code. When executing, the last parameter (the file) can be changed to whatever file you want. Go ahead and check out `/JScompiler/example_programs.txt` to see some samples! For more complex programs, check out `/full_programs`.
 
 # Documentation
 ---
