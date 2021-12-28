@@ -52,6 +52,15 @@ _mathResult: .long 0
 
 .section .text
 kernel_entry:
+    pusha
+    mov %dx, 0x3D4
+    mov %al, 0xA	 # disable cursor
+    out %dx, %al
+    inc %dx
+    mov %al, 0x20 # disable cursor
+    out %dx, %al
+    popa
+
 `,
     footer:
         `
@@ -152,6 +161,9 @@ var definedFuncs = {
     },
     if: function (value1, comparer, value2) {
         incPseudoLabel()
+        incPseudoLabel()
+        incPseudoLabel()
+        incPseudoLabel()
         var comparebyte = "cmp"
         if ((value1[0] == "[" && value1.at(-1) == "]") || (value2[0] == "[" && value2.at(-1) == "]")) {
             comparebyte = "cmpb"
@@ -174,15 +186,83 @@ var definedFuncs = {
             )
         }
     },
+    extifDoubleVar: function (value1a, comparer1, value2a, type, value1b, comparer2, value2b) {
+        incPseudoLabel()
+        incPseudoLabel()
+        incPseudoLabel()
+        incPseudoLabel()
+        if (value1a.includes("+") && !value1a.includes("]")) {
+            value1a = `[${value1a}]`
+        }
+        if (value2a.includes("+") && !value2a.includes("]")) {
+            value2a = `[${value2a}]`
+        }
+
+        if (value1b.includes("+") && !value1b.includes("]")) {
+            value1b = `[${value1b}]`
+        }
+        if (value2b.includes("+") && !value2b.includes("]")) {
+            value2b = `[${value2b}]`
+        }
+
+        if (type == "&&" || type.toUpperCase() == "AND") {
+            main_kernel_data.push(
+                `push %eax`,
+                `mov %eax, ${value1a}`,
+                `cmp %eax, ${value2a}`, //check
+                `pop %eax`,
+                `${compares[comparer1]} ${pseudoLabel()}`, //jump to pseudo label if condition is met
+                `jmp ${pseudoLabel("next")}`, //otherwise jump to the escape one
+                `${pseudoLabel()}:`, //create the "if" label
+                `   push %eax`,
+                `   mov %eax, ${value1b}`,
+                `   cmp %eax, ${value2b}`,
+                `   pop %eax`,
+                `   ${compares[comparer2]} ${pseudoLabel("secnext")}`,
+                `   jmp ${pseudoLabel("next")}`,
+                `   ${pseudoLabel("secnext")}:` //final label
+            )
+        } else if (type == "||" || type.toUpperCase() == "OR") {
+            main_kernel_data.push(
+                `push %eax`,
+                `mov %eax, ${value1a}`,
+                `$cmp %eax, ${value2a}`,
+                `pop %eax`,
+                `${compares[comparer1]} ${pseudoLabel()}`,
+                `push %eax`,
+                `mov %eax, ${value1b}`,
+                `$cmp %eax, ${value2b}`,
+                `pop %eax`, //if false, try the second one
+                `${compares[comparer2]} ${pseudoLabel()}`,
+                `jmp ${pseudoLabel("next")}`,
+                `${pseudoLabel()}:` //true
+            )
+        }
+    },
     extif: function (value1a, comparer1, value2a, type, value1b, comparer2, value2b) {
+        incPseudoLabel()
+        incPseudoLabel()
+
         var comparebyte = "cmp"
         var comparebyte2 = "cmp"
 
         if ((value1a[0] == "[" && value1a.at(-1) == "]") || (value2a[0] == "[" && value2a.at(-1) == "]")) {
             comparebyte = "cmpb"
+            if (value1a.includes("+") && !value1a.includes("]")) {
+                value1a = `[${value1a}]`
+            }
+            if (value2a.includes("+") && !value2a.includes("]")) {
+                value2a = `[${value2a}]`
+            }
         }
         if ((value1b[0] == "[" && value1b.at(-1) == "]") || (value2b[0] == "[" && value2b.at(-1) == "]")) {
             comparebyte2 = "cmpb"
+            if (value1b.includes("+") && !value1b.includes("]")) {
+                value1b = `[${value1b}]`
+            }
+            if (value2b.includes("+") && !value2b.includes("]")) {
+                value2b = `[${value2b}]`
+            }
         }
 
         if (type == "&&" || type.toUpperCase() == "AND") {
@@ -473,8 +553,16 @@ var definedFuncs = {
     getKeyboardInput: function () {
         main_kernel_data.push(`call read_keyboard`)
         lineContents[wordNumber] = 'keyboard_out'
+    },
+    evalOnConst: function(c,o,p2) {
+        lineContents[wordNumber] = eval(`${c} ${o} ${p2}`)
+        lineContents.splice(wordNumber + 1, 3)
+    },
+    endProgram: function() {
+        main_kernel_data.push(
+            `jmp $`
+        )
     }
-
 }
 
 var definedSpecials = {

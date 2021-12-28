@@ -1,0 +1,28 @@
+type string destination = "hello", "welcome", "bonjour", "whats up"
+type string source = "adios", "bye", "goodbye", "later"
+type int readIndex = 0
+
+printf(%s, "Program to copy one array into another one")
+
+printNewLine()
+
+while(readIndex < arrayLength(destination)) 
+    printNewLine()
+
+    printf(%s, "COPYING: ")
+    printf(%s, source[readIndex])
+    printf(%s "INTO: ")
+    printf(%s, destination[readIndex])
+
+    strcpy(destination[readIndex], source[readIndex])
+
+    printf(%s, "RESULT AT ADDRESS: ")
+    printf(%s, destination[readIndex])
+
+
+    ++ readIndex
+endWhile
+
+printNewLine()
+printLine(%s, "--done--")
+printLine(%s, "Program By: Nicolas Quijano - 2021")
