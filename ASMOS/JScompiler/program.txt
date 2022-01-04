@@ -88,19 +88,14 @@ jump finish
 # RENDER_FUNCTION:_EACH_CELL_IS_CHECKED_AND_DRAWN_IF_PRESENT
 function renderAndStep {
 
-    printAtPos(foodX, foodY)
-
-    setVar(cellAtIteration, 0)
+    # PRINT_FOOD
+    printAtPos(foodX, foodY) 
 
     # EDIT_POSITION_OF_HEAD
-    intcpy(currentSnakeCellX, snakeXPositions[cellAtIteration]) 
-    intcpy(currentSnakeCellY, snakeYPositions[cellAtIteration])
-    addVars(currentSnakeCellX, snakeDirectionX)
-    addVars(currentSnakeCellY, snakeDirectionY)
-    intcpy(snakeXPositions[cellAtIteration], currentSnakeCellX)
-    intcpy(snakeYPositions[cellAtIteration], currentSnakeCellY)
-
-    printHeadAtPos(currentSnakeCellX, currentSnakeCellY)
+    addToArray(snakeXPositions[0], snakeDirectionX)
+    addToArray(snakeYPositions[0], snakeDirectionY)
+    
+    printHeadAtPos(snakeXPositions, snakeYPositions)
 
     setVar(cellAtIteration, 1)
     while(cellAtIteration < $snakeMaxLength)
@@ -130,7 +125,6 @@ function renderAndStep {
         intcpy(snakeYPositions[snakeCurrentLength],snakeYPositions[0])
         setVar(snakeCurrentLength, 1)
     endif
-    
 
     if(*foodRead > arrayLength(foodPositionsX)) 
         setVar(foodRead,0)
@@ -144,16 +138,10 @@ function renderAndStep {
     endif
 
 
-    if(*snakeXPositions > 79)
+    extif(*snakeXPositions > 79 || *snakeXPositions < 0)
         call lose
     endif
-    if(*snakeXPositions < 0)
-        call lose
-    endif
-    if(*snakeYPositions > 25)
-        call lose
-    endif
-    if(*snakeYPositions < 0)
+    extif(*snakeYPositions > 25 || *snakeYPositions < 0)
         call lose
     endif
 
@@ -168,28 +156,25 @@ function lose {
     printAddr(%s, "PRESS ENTER TO PLAY AGAIN", 1065)
 
     # RESET_TAIL
-    setVar(currentSnakeCellX, -1)
     setVar(snakeCurrentLength, 0)
     while(snakeCurrentLength < $snakeMaxLength)
-        intcpy(snakeXPositions[snakeCurrentLength], currentSnakeCellX)
-        intcpy(snakeYPositions[snakeCurrentLength], currentSnakeCellX)
+        setVar(snakeXPositions[snakeCurrentLength], -1)
+        setVar(snakeYPositions[snakeCurrentLength], -1)
         ++ snakeCurrentLength
     endWhile
+
+    # RESET_HEAD
+    setVar(snakeRenderLength, 3)
+    setVar(snakeXPositions[0],40)
+    setVar(snakeYPositions[0],12)
 
     while(*renderedFrames > -1) 
         getKeyboardInput()
         if(*keyboard_out == KEY_ENTER)
-            # RESET_SCREEN_AND_HEAD
-            setVar(snakeRenderLength, 3)
-            setVar(currentSnakeCellX, 40)
-            setVar(currentSnakeCellY, 12)
-            intcpy(snakeXPositions[0],currentSnakeCellX)
-            intcpy(snakeYPositions[0],currentSnakeCellY)
             clearScreen
             jump continueFlow
         endif
     endWhile
-    endProgram
 }
 
 label finish

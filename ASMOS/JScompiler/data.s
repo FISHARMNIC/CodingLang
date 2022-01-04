@@ -8,6 +8,8 @@ KEY_RIGHT = 0x4D
 KEY_UP = 0x48
 KEY_DOWN = 0x50
 KEY_ENTER = 0x1C
+
+_strcmp_result: .byte 1 # 0 means true
 # IN USE : EBX, ECX
 # ECX : CHARACTER REGISTER
 # EBX : INDEX REGISTER
@@ -15,13 +17,11 @@ KEY_ENTER = 0x1C
 _vga_entry:
     # uses cl as the char register
     # uses ebx as the location register
-
     shl %ebx, 1 # multiply by 2
     mov %ch, BLACK # 0 is black, the background
     shl %ch, 4
     or %ch, WHITE # 15 is white, the foreground
     movw [%ebx + VGA_ADDR], %cx # writes the 16bit data into the memory address
-    
     ret
 
 .section .data
@@ -227,6 +227,35 @@ put_int_loop_start:
     # popa
 .endm
 
+.macro _mem_dump_print adr, ms, len
+    push %eax
+    push %ebx
+    movw _lineNumber, \adr # print loc
+    lea %eax, \ms # dump start
+    mov %ebx, \len # dump len
+    call _memDump_lbl
+    pop %ebx
+    pop %eax
+.endm
+
+.macro _mem_dump_print_static adr, ms, len
+    push %eax
+    push %ebx
+    movw _lineNumber, \adr # print loc
+    mov %eax, \ms # dump start
+    mov %ebx, \len # dump len
+    call _memDump_lbl
+    pop %ebx
+    pop %eax
+.endm
+
+_memDump_lbl: 
+    put_char [%eax] # dump char at address
+    inc %eax
+    cmp %eax, %ebx # index with len
+    jne _memDump_lbl # keep going until dump finish
+    ret
+
 read_keyboard:
     push %eax
     push %ebx
@@ -247,3 +276,70 @@ read_keyboard:
     pop %eax
     ret
     
+
+.macro strcmp str1, str2, len
+    push %eax
+    push %ebx
+    push %ecx
+    push %edx
+    push %esi
+    cld  # clear direction flag
+
+    lea %eax, \str1
+    lea %ebx, \str2
+    mov %ecx, \len
+    
+    call _strcmp_loop   
+
+
+    pop %esi
+    pop %edx
+    pop %ecx
+    pop %ebx
+    pop %eax
+
+.endm
+
+_strcmp_loop:
+    mov %edx, [%eax]
+    mov %esi, [%ebx]
+    cmp %esi, %edx
+    jne _strcmp_not_equal # if any char is not equal, exit
+    
+    # next char
+    inc %eax
+    inc %ebx
+
+    dec %ecx 
+    cmp %ecx, 0
+    jne _strcmp_loop # keep going
+    movb _strcmp_result, 0 # all chars arethe same, the difference is 0
+    ret
+
+_strcmp_not_equal: 
+    movb _strcmp_result, 1
+
+
+.macro set_array_index_to arr, index, offset, to
+    pusha
+    mov %eax, \index
+    mov %ebx, \offset
+    mul %ebx # index * byte offset
+    lea %ebx, \arr # get array position in memory
+    add %ebx, %eax # ebx = array position + (index * byteoffset)
+    mov %eax, \to # prepare source to avoid over referencing
+    mov [%ebx], %eax # set memory address at index to new value
+    popa
+.endm
+
+.macro add_to_array arr, address, by
+    pusha
+    lea %eax, \arr
+    mov %ecx, \address # store to avoid over-reference
+    add %eax, %ecx # eax = base pointer + (offset * address)
+    mov %ebx ,[%eax] # ebx = value at arr[address]
+    mov %ecx, \by # store to avoid over-reference
+    add %ebx, %ecx # ebx += increment
+    mov [%eax], %ebx # arr[address] += by
+    popa
+.endm

@@ -2,7 +2,6 @@
 
 const fs = require('fs')
 const { exec } = require("child_process");
-const { parse } = require('path/posix');
 
 /* 
 Note:
@@ -25,7 +24,7 @@ as
 var typedefs = {
     int: ".long",
     string: ".asciz",
-    char: ".short"
+    char: ".byte"
 }
 
 var compares = {
@@ -124,8 +123,14 @@ function tError(m) {
     process.exit(1)
 }
 
+var createdVarVals = []
 function randomStringName() {
-    return "S" + String(Math.random()).slice(2, 6)
+    var o
+    do {
+        o = "S" + String(Math.random()).slice(2, 8)
+    }
+    while(createdVarVals.includes(o)) // prevent overlaps
+    return o
 }
 
 var definedFuncs = {
@@ -313,9 +318,20 @@ var definedFuncs = {
 
     },
     setVar: function (name, value) {
-        main_kernel_data.push(
-            `set_var ${name}, ${value}`
-        )
+        if (!isNaN(parseInt(value))) { //is number
+            this.staticIntCpy(name, value)
+            // main_kernel_data.push(
+            //     `push %eax`,
+            //     `lea %eax, ${name}`, // move addres into register
+            //     `movw [%eax], ${value}`, //move value into memory address of var
+            //     `pop %eax`
+            // )
+        } else {
+            //console.lg
+            main_kernel_data.push(
+                `set_var ${name}, ${value}`
+            )
+        }
     },
     setString: function (addr, newString) {
         //console.log("SETTING", addr, newString)
@@ -333,6 +349,8 @@ var definedFuncs = {
             main_kernel_data.push(
                 `set_var ${addr} + ${ind}, '${x}'` // memory[stringStart + offset] = newString[offset]
             )
+            //console.log(`set_var ${addr} + ${ind}, '${x}'`)
+            //process.exit()
         })
     },
     setStringUnsafe: function (addr, newString) {
@@ -343,7 +361,7 @@ var definedFuncs = {
         //definedSpecials.type(["string", randString, "=", `"${newString}"`])
         ////console.log(userArrays, newString, newString.slice(0,newString.indexOf("+")))
         var parsed;
-        console.log("NAWS", newString)
+        console.log("NAWS", userArrays)
         if (newString.includes("+")) {
 
             if (newString.includes("[")) {
@@ -512,7 +530,7 @@ var definedFuncs = {
     endWhile: function () {
         //console.log(forLoop)
         main_kernel_data.push(
-            `cmpb [${forLoop.link}], ${forLoop.endValue}`,
+            `cmpb ${forLoop.link.includes("]") ? forLoop.link : `[${forLoop.link}]`}, ${forLoop.endValue}`,
             `${compares[forLoop.controller]} FOR${forlblCounter} `
         )
         forlblCounter++
@@ -554,15 +572,67 @@ var definedFuncs = {
         main_kernel_data.push(`call read_keyboard`)
         lineContents[wordNumber] = 'keyboard_out'
     },
-    evalOnConst: function(c,o,p2) {
+    evalOnConst: function (c, o, p2) {
         lineContents[wordNumber] = eval(`${c} ${o} ${p2}`)
         lineContents.splice(wordNumber + 1, 3)
     },
-    endProgram: function() {
+    endProgram: function () {
         main_kernel_data.push(
             `jmp $`
         )
+    },
+    staticIntCpy: function (dest, src) {
+        var randString = randomStringName()
+        data_section_data.push(`${randString}: .int ${src}`)
+        userArrays[randString] = 4
+        this.intcpy(dest, randString)
+    },
+    memDump: function (printAddr, memS, len) {
+        main_kernel_data.push(
+            `_mem_dump_print ${printAddr}, ${memS}, ${len}`
+        )
+    }, //broken ugh
+    StaticMemDump: function (printAddr, memS, len) {
+        main_kernel_data.push(
+            `_mem_dump_print_static ${printAddr}, ${memS}, ${len}`
+        )
+    }, //broken too
+    addIndexWith: function (ind, second) {
+        main_kernel_data.push(
+            `push %ecx`,
+            `push %ebx`,
+            `mov %ecx, ${ind}`,
+            `add %ecx, ${second}`,
+            `mov %ebx, ${ind.slice(1, ind.indexOf(" "))}`,
+            `add %ebx, %eax`,
+            `mov [%ebx], %ecx # set`,
+            `pop %ebx`,
+            `pop %ecx`,
+        )
+    },
+    strcmp: function (str1, str2) {
+
+        main_kernel_data.push(
+            `strcmp ${str1}, ${str2}, ${str1.length}`
+        )
+
+        lineContents.splice(wordNumber, 2)
+        lineContents[wordNumber] = `[_strcmp_result]`
+    },
+    setArrayIndexTo: function(arr, index, value) {
+        main_kernel_data.push(
+            `set_array_index_to ${arr}, ${index}, ${userArrays[arr]}, ${value}`
+        )
+    },
+    addToArray: function(ind, value) {
+        var arr = ind.slice(0,ind.indexOf("+"))
+        var index = ind.slice(ind.indexOf("+") + 1)
+        //console.log(`add_to_array_index ${arr}, ${index}, ${value}`)
+        main_kernel_data.push(
+            `add_to_array ${arr}, ${index}, ${value}`
+        )
     }
+    //---FUNCTION END HERE 1234 FOR FIND------
 }
 
 var definedSpecials = {
@@ -603,6 +673,11 @@ var definedSpecials = {
                 // rest.slice(3).forEach(x => {
                 //     userArrays[rest[1]].push(4) //.long numbers have 4 bytes
                 // })
+            } else if (rest[0] == "char") {
+                var arr = rest.slice(3)
+                userArrayLengths[rest[1]] = arr.length
+                rest[3] = arr.join(",")
+                userArrays[rest[1]] = 1
             }
 
             ////console.log("!!!!!", userArrays)
@@ -630,7 +705,7 @@ var definedSpecials = {
 
         main_kernel_data.push(`push %eax`, `mov %eax, ${code[0]}`)// //${parseInt(code[0]) ? code[0] : code[0].includes("[") ? code[0] : `[${code[0]}]`}`) // init in eax
 
-        //console.log("#####", code, itemNum)
+        console.log("#####", code)
 
         for (var itemNum = 1; itemNum < code.length - 1; itemNum += 2) { //go by ops
             var item = {
@@ -638,7 +713,7 @@ var definedSpecials = {
                 previous: code[itemNum - 1],//parseInt(code[itemNum - 1]) ? code[itemNum - 1] : `[${code[itemNum - 1]}]`,
                 next: code[itemNum + 1]//parseInt(code[itemNum + 1]) ? code[itemNum + 1] : `[${code[itemNum + 1]}]`
             }
-            //oFile.push(`${types[item.current]} %eax, ${item.next}`)
+    
             main_kernel_data.push(...((inD) => {
                 switch (inD.current) {
                     case "+":
@@ -732,6 +807,7 @@ module.exports = function run(code) {
             ////console.log(lineContents)
         }
         lineContents = lineContents.filter(_Wrd => _Wrd)
+        //lineContents = lineContents.filter(_Wrd => _Wrd != '[]')
         if (lineContents.filter(x => x == "arrayIndex").length == 2) {
             twoIndexReferences = true
         } else {
