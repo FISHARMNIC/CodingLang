@@ -134,14 +134,19 @@ note: use pointers (\*) when comparing variables
 
 `if(this operator that)` 
 	...  
-`else` < optional  
+`else`
 	...  
 `endif`  
 
 ---
 
 `extif(this operator that &&/|| this operator that)`  
-... same as above
+	...
+`else`
+	...
+`endif`
+
+`else` is optional
 
 ---
 
@@ -157,7 +162,7 @@ Basic documentation
 
 printf(%format, value)  
 printLine(%format, value)  
-
+printfAt(%format, value, address)
 ex.  
 printLine(%s, myStrArr\[3])  
 
@@ -171,6 +176,8 @@ if (*keyboard_out == KEY_UP)
 ...
 endif
 ```
+All keys represent the format KEY_<key>  
+Note that KEY_BACKSPACE is normally used where KEY_DELETE deletes from the right side, for at teletype program, use backspace
 
-only the arrow keys have been implemented so far
+*note* any modified keys such as shift+1 or shift+o will not work
 
