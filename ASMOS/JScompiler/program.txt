@@ -163,7 +163,7 @@ function lose {
         ++ snakeCurrentLength
     endWhile
 
-    # RESET_HEAD
+    # RESET_HEAD_AND_LENGTH
     setVar(snakeRenderLength, 3)
     setVar(snakeXPositions[0],40)
     setVar(snakeYPositions[0],12)
@@ -171,8 +171,8 @@ function lose {
     while(*renderedFrames > -1) 
         getKeyboardInput()
         if(*keyboard_out == KEY_ENTER)
-            clearScreen
-            jump continueFlow
+            clearScreen()
+            jump(continueFlow)
         endif
     endWhile
 }

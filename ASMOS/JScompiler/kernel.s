@@ -5,9 +5,9 @@
 
 _lineNumber: .long 0
 _mathResult: .long 0
-S492394: .asciz "Score"
-S149939: .asciz "GAME OVER!"
-S272735: .asciz "PRESS ENTER TO PLAY AGAIN"
+S302649: .asciz "Score"
+S846103: .asciz "GAME OVER!"
+S336050: .asciz "PRESS ENTER TO PLAY AGAIN"
 snakeMaxLength: .long 20
 snakeCurrentLength: .long 1
 snakeRenderLength: .long 3
@@ -27,25 +27,25 @@ currentSnakeCellX: .long 0
 currentSnakeCellY: .long 0
 renderedFrames: .long 0
 incrementIndex: .long 0
-S763425: .int 0
-S469979: .int -1
-S121807: .int 0
-S606515: .int 1
-S232327: .int -1
-S285556: .int 0
-S241802: .int 1
-S258947: .int 0
-S064253: .int 1
-S192247: .long 0
-S022575: .long 0
-S934982: .int 1
-S385012: .int 0
-S367765: .int 0
-S363243: .int -1
-S293715: .int -1
-S319198: .int 3
-S072996: .int 40
-S485059: .int 12
+S151620: .int 0
+S999557: .int -1
+S318910: .int 0
+S980745: .int 1
+S581628: .int -1
+S164671: .int 0
+S731802: .int 1
+S593228: .int 0
+S404544: .int 1
+S922597: .long 0
+S674391: .long 0
+S482391: .int 1
+S817312: .int 0
+S133647: .int 0
+S475424: .int -1
+S105845: .int -1
+S283471: .int 3
+S307969: .int 40
+S097409: .int 12
 .include "./data.s"
 
 .section .text
@@ -114,11 +114,11 @@ je _AUTO4
 jmp _AUTO5
 _AUTO4:
 mov %cx, 4 
-lea %esi, S763425      # offset new string into SI
+lea %esi, S151620      # offset new string into SI
 lea %edi, snakeDirectionX   # offset destination string into DI
 rep movsb
 mov %cx, 4 
-lea %esi, S469979      # offset new string into SI
+lea %esi, S999557      # offset new string into SI
 lea %edi, snakeDirectionY   # offset destination string into DI
 rep movsb
 _AUTO5:
@@ -127,11 +127,11 @@ je _AUTO9
 jmp _AUTO10
 _AUTO9:
 mov %cx, 4 
-lea %esi, S121807      # offset new string into SI
+lea %esi, S318910      # offset new string into SI
 lea %edi, snakeDirectionX   # offset destination string into DI
 rep movsb
 mov %cx, 4 
-lea %esi, S606515      # offset new string into SI
+lea %esi, S980745      # offset new string into SI
 lea %edi, snakeDirectionY   # offset destination string into DI
 rep movsb
 _AUTO10:
@@ -140,11 +140,11 @@ je _AUTO14
 jmp _AUTO15
 _AUTO14:
 mov %cx, 4 
-lea %esi, S232327      # offset new string into SI
+lea %esi, S581628      # offset new string into SI
 lea %edi, snakeDirectionX   # offset destination string into DI
 rep movsb
 mov %cx, 4 
-lea %esi, S285556      # offset new string into SI
+lea %esi, S164671      # offset new string into SI
 lea %edi, snakeDirectionY   # offset destination string into DI
 rep movsb
 _AUTO15:
@@ -153,11 +153,11 @@ je _AUTO19
 jmp _AUTO20
 _AUTO19:
 mov %cx, 4 
-lea %esi, S241802      # offset new string into SI
+lea %esi, S731802      # offset new string into SI
 lea %edi, snakeDirectionX   # offset destination string into DI
 rep movsb
 mov %cx, 4 
-lea %esi, S258947      # offset new string into SI
+lea %esi, S593228      # offset new string into SI
 lea %edi, snakeDirectionY   # offset destination string into DI
 rep movsb
 _AUTO20:
@@ -165,11 +165,11 @@ call renderAndStep
 # Wait
 push %eax
 mov %eax, 26843545
-S953944:
+S886254:
 nop
 sub %eax, 1
 cmp %eax, 0
-jge S953944
+jge S886254
 pop %eax
 cmpb [renderedFrames], -1
 jg FOR0 
@@ -183,7 +183,7 @@ add_to_array snakeXPositions, 0, snakeDirectionX
 add_to_array snakeYPositions, 0, snakeDirectionY
 printHeadAtPos snakeXPositions,snakeYPositions
 mov %cx, 4 
-lea %esi, S064253      # offset new string into SI
+lea %esi, S404544      # offset new string into SI
 lea %edi, cellAtIteration   # offset destination string into DI
 rep movsb
 FOR1:
@@ -284,7 +284,7 @@ lea %esi, snakeYPositions+0      # offset new string into SI
 lea %edi, [snakeYPositions + %eax]   # offset destination string into DI
 rep movsb
 mov %cx, 4 
-lea %esi, S934982      # offset new string into SI
+lea %esi, S482391      # offset new string into SI
 lea %edi, snakeCurrentLength   # offset destination string into DI
 rep movsb
 _AUTO32:
@@ -293,7 +293,7 @@ jg _AUTO36
 jmp _AUTO37
 _AUTO36:
 mov %cx, 4 
-lea %esi, S385012      # offset new string into SI
+lea %esi, S817312      # offset new string into SI
 lea %edi, foodRead   # offset destination string into DI
 rep movsb
 _AUTO37:
@@ -344,7 +344,7 @@ jmp _AUTO48
 _AUTO47:
 call lose
 _AUTO48:
-put_string S492394, 0
+put_string S302649, 0
 push %eax
 mov %eax, snakeRenderLength
 sub %eax, 2
@@ -354,11 +354,11 @@ put_int _mathResult, 80
 ret
 lose:
 call _clearVGA
-put_string S149939, 993
-put_string S272735, 1065
+put_string S846103, 993
+put_string S336050, 1065
 # RESET_TAIL
 mov %cx, 4 
-lea %esi, S367765      # offset new string into SI
+lea %esi, S133647      # offset new string into SI
 lea %edi, snakeCurrentLength   # offset destination string into DI
 rep movsb
 FOR2:
@@ -366,30 +366,30 @@ mov %eax, [snakeCurrentLength]
 mov %ebx, 4
 mul %ebx
 mov %cx, 4 
-lea %esi, S363243      # offset new string into SI
+lea %esi, S475424      # offset new string into SI
 lea %edi, [snakeXPositions + %eax]   # offset destination string into DI
 rep movsb
 mov %eax, [snakeCurrentLength]
 mov %ebx, 4
 mul %ebx
 mov %cx, 4 
-lea %esi, S293715      # offset new string into SI
+lea %esi, S105845      # offset new string into SI
 lea %edi, [snakeYPositions + %eax]   # offset destination string into DI
 rep movsb
 inc_var snakeCurrentLength
 cmpb [snakeCurrentLength], 20
 jl FOR2 
-# RESET_HEAD
+# RESET_HEAD_AND_LENGTH
 mov %cx, 4 
-lea %esi, S319198      # offset new string into SI
+lea %esi, S283471      # offset new string into SI
 lea %edi, snakeRenderLength   # offset destination string into DI
 rep movsb
 mov %cx, 4 
-lea %esi, S072996      # offset new string into SI
+lea %esi, S307969      # offset new string into SI
 lea %edi, snakeXPositions+0   # offset destination string into DI
 rep movsb
 mov %cx, 4 
-lea %esi, S485059      # offset new string into SI
+lea %esi, S097409      # offset new string into SI
 lea %edi, snakeYPositions+0   # offset destination string into DI
 rep movsb
 FOR3:
