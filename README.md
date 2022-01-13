@@ -158,7 +158,7 @@ note: use pointers (\*) when comparing variables
 
 Basic documentation  
 
-% options: %s, %i, %c ; string, int, char  
+format options: %s, %i, %c ; string, int, char  
 
 printf(%format, value)  
 printLine(%format, value)  
@@ -171,11 +171,17 @@ printLine(%s, myStrArr\[3])
 Basic documentation
 
 example.
-```getKeyboardInput()
-if (*keyboard_out == KEY_UP)
-...
-endif
 ```
+getKeyboardInput()
+if (*keyboard_out == KEY_UP)
+	...
+endif
+if (*keyboard_out == KEY_DOWN)
+	...
+endif
+...
+```
+getKeyboardInput() must be called before checking what key got presses
 All keys represent the format KEY_<key>  
 Note that KEY_BACKSPACE is normally used where KEY_DELETE deletes from the right side, for at teletype program, use backspace
 
