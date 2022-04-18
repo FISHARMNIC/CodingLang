@@ -1,4 +1,5 @@
 # CodingLang
+# This is an old project, instead look over at [this](https://github.com/FISHARMNIC/Better-Coding-Lang)
 made for linux or windows WSL
 ---
 
